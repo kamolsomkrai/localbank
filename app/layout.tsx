@@ -1,16 +1,8 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+import Providers from "@/components/providers"
+// import Sidebar from "@/components/Sidebar";
+import Navbar from "@/components/Navbar";
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -24,10 +16,21 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        {children}
+      <body className="pt-16 flex h-screen bg-background text-foreground">
+        <Providers>
+          <Navbar />
+          {/* <Sidebar /> */}
+          <div className="flex-1 flex flex-col overflow-hidden">
+            <main className="flex-1 overflow-auto p-6">
+              {children}
+            </main>
+            <footer className="bg-primary text-primary-foreground py-6">
+              <div className="container mx-auto px-6 text-center">
+                <p>© {new Date().getFullYear()} ธนาคารหมู่บ้าน แม่ฮาว. All rights reserved.</p>
+              </div>
+            </footer>
+          </div>
+        </Providers>
       </body>
     </html>
   );

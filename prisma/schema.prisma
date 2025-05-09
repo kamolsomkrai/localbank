@@ -1,0 +1,90 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
+enum RoleType {
+  ADMIN
+  STAFF
+}
+
+enum AccountType {
+  SAVINGS
+  FIXED
+  CURRENT
+}
+
+enum TxType {
+  DEPOSIT
+  WITHDRAW
+}
+
+model Staff {
+  id           String        @id @default(uuid()) @db.Uuid
+  name         String
+  email        String        @unique
+  password     String
+  role         RoleType
+  createdAt    DateTime      @default(now())
+  accounts     AccountUser[]
+  sessions     Session[]
+  transactions Transaction[] @relation("StaffTransactions")
+}
+
+model AccountUser {
+  id                String @id @default(uuid()) @db.Uuid
+  provider          String
+  providerAccountId String
+  staff             Staff  @relation(fields: [staffId], references: [id])
+  staffId           String @unique @db.Uuid
+}
+
+model Session {
+  id           String   @id @default(uuid()) @db.Uuid
+  sessionToken String   @unique
+  staff        Staff    @relation(fields: [staffId], references: [id])
+  staffId      String   @db.Uuid
+  expires      DateTime
+}
+
+model Account {
+  id           String        @id @default(uuid()) @db.Uuid
+  number       String        @unique
+  cid          String
+  prefix       String
+  firstName    String
+  lastName     String
+  accountName  String
+  type         AccountType
+  balance      Decimal       @default(0) @db.Decimal(15, 2)
+  createdAt    DateTime      @default(now())
+  transactions Transaction[]
+}
+
+model Transaction {
+  id         String    @id @default(uuid()) @db.Uuid
+  account    Account   @relation(fields: [accountId], references: [id])
+  accountId  String    @db.Uuid
+  amount     Decimal   @default(0) @db.Decimal(15, 2)
+  type       TxType
+  staff      Staff     @relation("StaffTransactions", fields: [staffId], references: [id])
+  staffId    String    @db.Uuid
+  createdAt  DateTime  @default(now())
+}
+
+model InterestRate {
+  id          String      @id @default(uuid()) @db.Uuid
+  accountType AccountType @unique
+  rate        Float
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}

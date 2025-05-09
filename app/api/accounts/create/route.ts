@@ -1,0 +1,51 @@
+// app/api/accounts/create/route.ts
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { generateThaiAccountNumber } from "@/lib/account";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+
+export async function POST(req: Request) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user || session.user.role !== "STAFF") {
+    return NextResponse.json({ error: "สิทธิ์ไม่เพียงพอ" }, { status: 403 });
+  }
+
+  const {
+    accountType,
+    cid,
+    prefixName,
+    firstName,
+    lastName,
+    accountName,
+    initialDeposit,
+  } = await req.json();
+
+  const number = await generateThaiAccountNumber();
+
+  // สร้าง Account พร้อมบันทึก Transaction ฝากแรกเข้า
+  const account = await prisma.account.create({
+    data: {
+      number,
+      cid,
+      prefix: prefixName,
+      firstName,
+      lastName,
+      accountName,
+      type: accountType,
+      balance: initialDeposit,
+      transactions: {
+        create: {
+          amount: initialDeposit,
+          type: "DEPOSIT",
+          staffId: session.user.id, // เชื่อมกับ Staff ผ่าน transaction
+        },
+      },
+    },
+    include: {
+      transactions: true, // ถ้าอยากดึง transaction กลับมาด้วย
+    },
+  });
+
+  return NextResponse.json(account);
+}

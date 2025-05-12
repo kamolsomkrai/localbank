@@ -66,8 +66,8 @@ export async function POST(req: NextRequest) {
           .account-number {
             font-size: 18pt;
             font-weight: bold;
-            margin: 1mm 0;
-            padding-top: 115mm;
+            margin: 3mm 0;
+            padding-top: 117mm;
           }
           .balance {
             font-size: 18pt;

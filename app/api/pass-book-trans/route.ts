@@ -110,8 +110,8 @@ export async function POST(req: NextRequest) {
           body {
             font-family: "Courier New", monospace;
             margin: 0;
-            padding: 3mm;
-            font-size: 10pt;
+            padding-top: 10mm;
+            font-size: 14pt;
           }
           table {
             width: 100%;
@@ -125,9 +125,9 @@ export async function POST(req: NextRequest) {
             <tr style="display: none">
               <th style="width: 25%; text-align: left;">วันที่</th>
               <th style="width: 5%; text-align: center;">ประเภท</th>
-              <th style="width: 40%; text-align: right;">จำนวน</th>
-              <th style="width: 25%; text-align: right;">คงเหลือ</th>
-              <th style="width: 5%; text-align: right;">Staff</th>
+              <th style="width: 40%; text-align: right; margin-left: 2mm;">จำนวน</th>
+              <th style="width: 25%; text-align: right; margin-left: 2mm;">คงเหลือ</th>
+              <th style="width: 5%; text-align: right; margin-left: 2mm;">Staff</th>
             </tr>
           </thead>
           <tbody>${rows}</tbody>

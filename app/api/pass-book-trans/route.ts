@@ -66,17 +66,17 @@ export async function POST(req: NextRequest) {
     .map(
       (tx) => `
     <tr>
-      <td style="width: 10%; ${tx.printed ? "color: transparent" : ""}">
+      <td style="width: 25%; ${tx.printed ? "color: transparent" : ""}">
         ${new Date(tx.createdAt).toLocaleString("th-TH", {
           dateStyle: "short",
         })}
       </td>
-      <td style="width: 10%; text-align: center; ${
+      <td style="width: 5%; text-align: center; ${
         tx.printed ? "color: transparent" : ""
       }">
         ${tx.type === "DEPOSIT" ? "DEP" : tx.type === "WITHDRAW" ? "WD" : "INT"}
       </td>
-      <td style="width: 30%; text-align: ${
+      <td style="width: 40%; text-align: ${
         tx.type === "WITHDRAW" ? "left" : "right"
       }; ${tx.printed ? "color: transparent" : ""}">
       ${parseFloat(tx.amount).toLocaleString("th-TH", {
@@ -92,7 +92,7 @@ export async function POST(req: NextRequest) {
         maximumFractionDigits: 2,
       })}
       </td>
-      <td style="width: 10%; text-align: right; ${
+      <td style="width: 5%; text-align: right; ${
         tx.printed ? "color: transparent" : ""
       }">${tx.staffId?.split("-")[1] || ""}</td>
     </tr>
@@ -111,7 +111,7 @@ export async function POST(req: NextRequest) {
             font-family: "Courier New", monospace;
             margin: 0;
             padding-top: 10mm;
-            font-size: 14pt;
+            font-size: 12pt;
           }
           table {
             width: 100%;

@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
   }
 
   // แบ่ง transaction เป็นชุดๆ ละ 30 รายการ
-  const chunkSize = 27;
+  const chunkSize = 25;
   const txChunks = [];
   for (let i = 0; i < allTxs.length; i += chunkSize) {
     txChunks.push(allTxs.slice(i, i + chunkSize));

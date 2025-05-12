@@ -268,11 +268,20 @@ export default function NewAccountPage() {
                     <div className="relative">
                       <Input
                         id="initialDeposit"
-                        type="number"
-                        // min={accountType === "FIXED" ? 5000 : 0}
-                        min={0}
+                        type="text"  // ใช้ type="text" เพื่อให้ควบคุมการแสดงผลได้ง่ายกว่า
+                        inputMode="decimal"  // ทำให้มือถือแสดงคีย์บอร์ดแบบตัวเลขพร้อมจุดทศนิยม
                         value={formData.initialDeposit}
-                        onChange={handleChange}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          // อนุญาตเฉพาะ: ตัวเลข 0-9 และจุดทศนิยม (ไม่เกิน 1 จุด)
+                          if (/^\d*\.?\d*$/.test(value)) {
+                            // Optional: จำกัดทศนิยมไม่เกิน 2 ตำแหน่ง
+                            const parts = value.split('.');
+                            if (parts[1] === undefined || parts[1].length <= 2) {
+                              handleChange(e); // หรือ setFormData(...)
+                            }
+                          }
+                        }}
                         className="pl-8 text-lg"
                         required
                       />

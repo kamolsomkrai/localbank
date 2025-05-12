@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
             font-size: 18pt;
             font-weight: bold;
             margin: 3mm 0;
-            padding-top: 117mm;
+            padding-top: 115mm;
           }
           .balance {
             font-size: 18pt;

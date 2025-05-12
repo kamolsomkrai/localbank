@@ -37,10 +37,15 @@ export default function NewAccountPage() {
     e.preventDefault()
     setIsLoading(true)
 
+    // ตั้งชื่อบัญชีอัตโนมัติถ้าไม่ได้กรอก
+    const accountName = formData.accountName.trim() ||
+      `${formData.prefixName}${formData.firstName} ${formData.lastName}`.trim()
+
     try {
       const response = await api.post("/accounts/create", {
         accountType,
         ...formData,
+        accountName, // ใช้ชื่อที่คำนวณแล้ว
         initialDeposit: Number(formData.initialDeposit)
       })
 
@@ -256,11 +261,15 @@ export default function NewAccountPage() {
                     <Label htmlFor="accountName">ชื่อบัญชี</Label>
                     <Input
                       id="accountName"
-                      placeholder="เช่น บัญชีเงินฝากส่วนตัว"
+                      placeholder={`เช่น ${formData.prefixName || 'นาย'}${formData.firstName || 'สมชาย'} ${formData.lastName || 'ดีมาก'}`}
                       value={formData.accountName}
                       onChange={handleChange}
-                      required
                     />
+                    {!formData.accountName && (
+                      <p className="text-sm text-gray-500 mt-1">
+                        หากไม่กรอก จะใช้ชื่อ "<span className="font-medium">{`${formData.prefixName}${formData.firstName} ${formData.lastName}`}</span>" โดยอัตโนมัติ
+                      </p>
+                    )}
                   </div>
 
                   <div className="space-y-2">

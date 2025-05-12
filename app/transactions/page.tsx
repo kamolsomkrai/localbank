@@ -12,7 +12,7 @@ import { toast } from "sonner"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Search, Clock, Wallet, ArrowDownCircle, ArrowUpCircle, Loader2 } from "lucide-react"
+import { Search, Clock, Wallet, ArrowDownCircle, ArrowUpCircle, Loader2, AlertCircle } from "lucide-react"
 import { useDebounce } from "use-debounce"
 
 type Account = {

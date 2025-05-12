@@ -1,6 +1,6 @@
 'use client';
 import { useState, FormEvent } from 'react';
-import { Search, AlertCircle, User, CreditCard, Calendar, Coins, Copy } from 'lucide-react';
+import { Search, AlertCircle, User, CreditCard, Calendar, Coins, Copy, Edit, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -9,6 +9,9 @@ import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 type Account = {
   id: string;
@@ -28,6 +31,9 @@ export default function SearchPage() {
   const [results, setResults] = useState<Account[]>([]);
   const [error, setError] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [currentAccount, setCurrentAccount] = useState<Account | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   async function handleSearch(e: FormEvent) {
     e.preventDefault();
@@ -63,6 +69,48 @@ export default function SearchPage() {
     toast.success('คัดลอกเลขบัญชีเรียบร้อยแล้ว', {
       description: accountNumber,
     });
+  };
+
+  const handleEditClick = (account: Account) => {
+    setCurrentAccount(account);
+    setIsEditModalOpen(true);
+  };
+
+  const handleSaveChanges = async () => {
+    if (!currentAccount) return;
+
+    setIsSaving(true);
+    try {
+      const res = await fetch(`/api/accounts/${currentAccount.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          accountType: currentAccount.type,
+          cid: currentAccount.cid,
+          prefixName: currentAccount.prefix,
+          firstName: currentAccount.firstName,
+          lastName: currentAccount.lastName,
+          accountName: currentAccount.accountName,
+        }),
+      });
+
+      if (!res.ok) throw new Error('ไม่สามารถบันทึกการเปลี่ยนแปลง');
+
+      const updatedAccount = await res.json();
+      setResults(results.map(acc =>
+        acc.id === updatedAccount.id ? {
+          ...updatedAccount,
+          balance: acc.balance, // รักษาค่า balance เดิม
+          createdAt: acc.createdAt // รักษาค่า createdAt เดิม
+        } : acc
+      ));
+      toast.success('อัปเดตข้อมูลบัญชีเรียบร้อยแล้ว');
+      setIsEditModalOpen(false);
+    } catch (error) {
+      toast.error('เกิดข้อผิดพลาดในการอัปเดตข้อมูล');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -153,6 +201,7 @@ export default function SearchPage() {
                         <span>วันที่เปิด</span>
                       </div>
                     </TableHead>
+                    <TableHead className="w-[100px]">การดำเนินการ</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -201,12 +250,145 @@ export default function SearchPage() {
                           day: 'numeric'
                         })}
                       </TableCell>
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 px-2"
+                          onClick={() => handleEditClick(account)}
+                        >
+                          <Edit className="w-4 h-4" />
+                          <span className="sr-only">แก้ไข</span>
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
             </div>
           )}
+
+          {/* Edit Account Modal */}
+          <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+            <DialogContent className="sm:max-w-[600px]">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <Edit className="w-5 h-5" />
+                  แก้ไขข้อมูลบัญชี
+                </DialogTitle>
+                <DialogDescription>
+                  เลขบัญชี: {currentAccount?.number}
+                </DialogDescription>
+              </DialogHeader>
+
+              {currentAccount && (
+                <div className="grid gap-4 py-4">
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="accountType" className="text-right">
+                      ประเภทบัญชี
+                    </Label>
+                    <Select
+                      value={currentAccount.type}
+                      onValueChange={(value) => setCurrentAccount({ ...currentAccount, type: value })}
+                    >
+                      <SelectTrigger className="col-span-3">
+                        <SelectValue placeholder="เลือกประเภทบัญชี" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="SAVINGS">ออมทรัพย์</SelectItem>
+                        <SelectItem value="FIXED">เงินฝากประจำ</SelectItem>
+                        <SelectItem value="CURRENT">กระแสรายวัน</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="cid" className="text-right">
+                      เลขบัตรประชาชน
+                    </Label>
+                    <Input
+                      id="cid"
+                      value={currentAccount.cid}
+                      onChange={(e) => setCurrentAccount({ ...currentAccount, cid: e.target.value })}
+                      className="col-span-3"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="prefix" className="text-right">
+                      คำนำหน้า
+                    </Label>
+                    <Input
+                      id="prefix"
+                      value={currentAccount.prefix}
+                      onChange={(e) => setCurrentAccount({ ...currentAccount, prefix: e.target.value })}
+                      className="col-span-3"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="firstName" className="text-right">
+                      ชื่อ
+                    </Label>
+                    <Input
+                      id="firstName"
+                      value={currentAccount.firstName}
+                      onChange={(e) => setCurrentAccount({ ...currentAccount, firstName: e.target.value })}
+                      className="col-span-3"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="lastName" className="text-right">
+                      นามสกุล
+                    </Label>
+                    <Input
+                      id="lastName"
+                      value={currentAccount.lastName}
+                      onChange={(e) => setCurrentAccount({ ...currentAccount, lastName: e.target.value })}
+                      className="col-span-3"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="accountName" className="text-right">
+                      ชื่อบัญชี
+                    </Label>
+                    <Input
+                      id="accountName"
+                      value={currentAccount.accountName}
+                      onChange={(e) => setCurrentAccount({ ...currentAccount, accountName: e.target.value })}
+                      className="col-span-3"
+                    />
+                  </div>
+
+                  <div className="flex justify-end gap-2 pt-4">
+                    <Button
+                      variant="outline"
+                      onClick={() => setIsEditModalOpen(false)}
+                      disabled={isSaving}
+                    >
+                      ยกเลิก
+                    </Button>
+                    <Button
+                      onClick={handleSaveChanges}
+                      disabled={isSaving}
+                    >
+                      {isSaving ? (
+                        <>
+                          <svg className="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          กำลังบันทึก...
+                        </>
+                      ) : 'บันทึกการเปลี่ยนแปลง'}
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </DialogContent>
+          </Dialog>
         </CardContent>
       </Card>
     </div>

@@ -39,14 +39,17 @@ export async function POST(req: Request) {
     );
   }
 
+  // Calculate new balance
+  const balanceAfter =
+    type === "DEPOSIT"
+      ? account.balance.plus(amount)
+      : account.balance.minus(amount);
+
   const [updatedAccount, newTx] = await prisma.$transaction([
     prisma.account.update({
       where: { number: accountNumber },
       data: {
-        balance:
-          type === "DEPOSIT"
-            ? account.balance.plus(amount)
-            : account.balance.minus(amount),
+        balance: balanceAfter,
       },
     }),
     prisma.transaction.create({
@@ -55,6 +58,7 @@ export async function POST(req: Request) {
         amount,
         type,
         staffId: session.user.id,
+        balanceAfter: balanceAfter, // Store the balance after transaction
       },
     }),
   ]);

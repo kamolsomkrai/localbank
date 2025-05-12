@@ -79,6 +79,8 @@ model Transaction {
   staff      Staff     @relation("StaffTransactions", fields: [staffId], references: [id])
   staffId    String    @db.Uuid
   createdAt  DateTime  @default(now())
+  printed    Boolean   @default(false)
+  balanceAfter Decimal   @default(0) @db.Decimal(15, 2)
 }
 
 model InterestRate {

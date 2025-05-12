@@ -128,11 +128,11 @@ export async function POST(req: NextRequest) {
         <table>
           <thead>
             <tr style="display: none">
-              <th style="width: 25%; text-align: left;">วันที่</th>
-              <th style="width: 3%; text-align: center;">ประเภท</th>
+              <th style="width: 20%; text-align: left;">วันที่</th>
+              <th style="width: 5%; text-align: center;">ประเภท</th>
               <th style="width: 45%;">จำนวน</th>
-              <th style="width: 25%; text-align: right; margin-left: 2mm;">คงเหลือ</th>
-              <th style="width: 5%; text-align: right; margin-left: 3mm;">Staff</th>
+              <th style="width: 20%; text-align: right; margin-left: 5mm;">คงเหลือ</th>
+              <th style="width: 10%; text-align: right; margin-left: 5mm;">Staff</th>
             </tr>
           </thead>
           <tbody>${rows}</tbody>

@@ -69,14 +69,14 @@ export async function POST(req: NextRequest) {
 
       return `
   <tr>
-    <td style="${paddingStyle} width: 20%; ${
+    <td style="${paddingStyle} width: 15%; ${
         tx.printed ? "color: transparent" : ""
       }">
       ${new Date(tx.createdAt).toLocaleString("th-TH", {
         dateStyle: "short",
       })}
     </td>
-    <td style="${paddingStyle} width: 10%; text-align: left; ${
+    <td style="${paddingStyle} width: 5%; text-align: left; ${
         tx.printed ? "color: transparent" : ""
       }">
       ${tx.type === "DEPOSIT" ? "DEP" : tx.type === "WITHDRAW" ? "WD" : "INT"}
@@ -97,7 +97,7 @@ export async function POST(req: NextRequest) {
       maximumFractionDigits: 2,
     })}
     </td>
-    <td style="${paddingStyle} width: 10%; text-align: right; ${
+    <td style="${paddingStyle} width: 20%; text-align: right; ${
         tx.printed ? "color: transparent" : ""
       }">${tx.staffId?.split("-")[1] || ""}</td>
   </tr>
@@ -128,11 +128,11 @@ export async function POST(req: NextRequest) {
         <table>
           <thead>
             <tr style="display: none">
-              <th style="width: 20%; text-align: left;">วันที่</th>
+              <th style="width: 15%; text-align: left;">วันที่</th>
               <th style="width: 5%; text-align: center;">ประเภท</th>
-              <th style="width: 45%; text-align: right;">จำนวน</th>
+              <th style="width: 40%; text-align: right;">จำนวน</th>
               <th style="width: 20%; text-align: right; margin-left: 2mm;">คงเหลือ</th>
-              <th style="width: 10%; text-align: right; margin-left: 5mm;">Staff</th>
+              <th style="width: 20%; text-align: right; margin-left: 5mm;">Staff</th>
             </tr>
           </thead>
           <tbody>${rows}</tbody>

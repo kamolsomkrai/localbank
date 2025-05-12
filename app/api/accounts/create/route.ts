@@ -37,6 +37,7 @@ export async function POST(req: Request) {
       transactions: {
         create: {
           amount: initialDeposit,
+          balanceAfter: initialDeposit,
           type: "DEPOSIT",
           staffId: session.user.id, // เชื่อมกับ Staff ผ่าน transaction
         },

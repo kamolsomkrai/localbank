@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
   }
 
   // แบ่ง transaction เป็นชุดๆ ละ 30 รายการ
-  const chunkSize = 30;
+  const chunkSize = 27;
   const txChunks = [];
   for (let i = 0; i < allTxs.length; i += chunkSize) {
     txChunks.push(allTxs.slice(i, i + chunkSize));
@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
   const rows = sortedTxs
     .map((tx, index) => {
       // เพิ่ม padding-top 15mm สำหรับแถวที่ 16 เป็นต้นไป
-      const paddingStyle = index === 15 ? "padding-top: 15mm;" : "";
+      const paddingStyle = index === 13 ? "padding-top: 10mm;" : "";
 
       return `
   <tr>
@@ -130,8 +130,8 @@ export async function POST(req: NextRequest) {
             <tr style="display: none">
               <th style="width: 20%; text-align: left;">วันที่</th>
               <th style="width: 5%; text-align: center;">ประเภท</th>
-              <th style="width: 45%;">จำนวน</th>
-              <th style="width: 20%; text-align: right; margin-left: 5mm;">คงเหลือ</th>
+              <th style="width: 45%; text-align: right;">จำนวน</th>
+              <th style="width: 20%; text-align: right; margin-left: 2mm;">คงเหลือ</th>
               <th style="width: 10%; text-align: right; margin-left: 5mm;">Staff</th>
             </tr>
           </thead>

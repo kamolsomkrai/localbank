@@ -66,13 +66,13 @@ export async function POST(req: NextRequest) {
           .account-number {
             font-size: 18pt;
             font-weight: bold;
-            margin: 5mm 0;
-            padding-top: 115mm;
+            margin: 1mm 0;
+            padding-top: 112mm;
           }
           .balance {
             font-size: 18pt;
             font-weight: bold;
-            margin: 10mm 0;
+            margin: 1mm 0;
           }
           .date {
             font-size: 10pt;

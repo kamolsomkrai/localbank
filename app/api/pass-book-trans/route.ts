@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
 
       return `
   <tr>
-    <td style="${paddingStyle} width: 10%; ${
+    <td style="${paddingStyle} width: 20%; ${
         tx.printed ? "color: transparent" : ""
       }">
       ${new Date(tx.createdAt).toLocaleString("th-TH", {
@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
       }">
       ${tx.type === "DEPOSIT" ? "DEP" : tx.type === "WITHDRAW" ? "WD" : "INT"}
     </td>
-    <td style="${paddingStyle} width: 30%; text-align: ${
+    <td style="${paddingStyle} width: 40%; text-align: ${
         tx.type === "WITHDRAW" ? "left" : "right"
       }; ${tx.printed ? "color: transparent" : ""}">
     ${parseFloat(tx.amount).toLocaleString("th-TH", {
@@ -89,7 +89,7 @@ export async function POST(req: NextRequest) {
       maximumFractionDigits: 2,
     })}
     </td>
-    <td style="${paddingStyle} width: 25%; text-align: right; ${
+    <td style="${paddingStyle} width: 20%; text-align: right; ${
         tx.printed ? "color: transparent" : ""
       }">
     ${parseFloat(tx.balanceAfter).toLocaleString("th-TH", {

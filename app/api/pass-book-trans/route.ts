@@ -63,41 +63,46 @@ export async function POST(req: NextRequest) {
 
   // สร้างแถวข้อมูล
   const rows = sortedTxs
-    .map(
-      (tx) => `
-    <tr>
-      <td style="width: 25%; ${tx.printed ? "color: transparent" : ""}">
-        ${new Date(tx.createdAt).toLocaleString("th-TH", {
-          dateStyle: "short",
-        })}
-      </td>
-      <td style="width: 5%; text-align: center; ${
+    .map((tx, index) => {
+      // เพิ่ม padding-top 15mm สำหรับแถวที่ 16 เป็นต้นไป
+      const paddingStyle = index === 15 ? "padding-top: 15mm;" : "";
+
+      return `
+  <tr>
+    <td style="${paddingStyle} width: 10%; ${
         tx.printed ? "color: transparent" : ""
       }">
-        ${tx.type === "DEPOSIT" ? "DEP" : tx.type === "WITHDRAW" ? "WD" : "INT"}
-      </td>
-      <td style="width: 40%; text-align: ${
+      ${new Date(tx.createdAt).toLocaleString("th-TH", {
+        dateStyle: "short",
+      })}
+    </td>
+    <td style="${paddingStyle} width: 10%; text-align: left; ${
+        tx.printed ? "color: transparent" : ""
+      }">
+      ${tx.type === "DEPOSIT" ? "DEP" : tx.type === "WITHDRAW" ? "WD" : "INT"}
+    </td>
+    <td style="${paddingStyle} width: 30%; text-align: ${
         tx.type === "WITHDRAW" ? "left" : "right"
       }; ${tx.printed ? "color: transparent" : ""}">
-      ${parseFloat(tx.amount).toLocaleString("th-TH", {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      })}
-      </td>
-      <td style="width: 25%; text-align: right; ${
+    ${parseFloat(tx.amount).toLocaleString("th-TH", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}
+    </td>
+    <td style="${paddingStyle} width: 25%; text-align: right; ${
         tx.printed ? "color: transparent" : ""
       }">
-      ${parseFloat(tx.balanceAfter).toLocaleString("th-TH", {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      })}
-      </td>
-      <td style="width: 5%; text-align: right; ${
+    ${parseFloat(tx.balanceAfter).toLocaleString("th-TH", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}
+    </td>
+    <td style="${paddingStyle} width: 10%; text-align: right; ${
         tx.printed ? "color: transparent" : ""
       }">${tx.staffId?.split("-")[1] || ""}</td>
-    </tr>
-  `
-    )
+  </tr>
+`;
+    })
     .join("");
 
   const html = `
@@ -124,10 +129,10 @@ export async function POST(req: NextRequest) {
           <thead>
             <tr style="display: none">
               <th style="width: 25%; text-align: left;">วันที่</th>
-              <th style="width: 5%; text-align: center;">ประเภท</th>
-              <th style="width: 40%; text-align: right; margin-left: 2mm;">จำนวน</th>
+              <th style="width: 3%; text-align: center;">ประเภท</th>
+              <th style="width: 45%;">จำนวน</th>
               <th style="width: 25%; text-align: right; margin-left: 2mm;">คงเหลือ</th>
-              <th style="width: 5%; text-align: right; margin-left: 2mm;">Staff</th>
+              <th style="width: 5%; text-align: right; margin-left: 3mm;">Staff</th>
             </tr>
           </thead>
           <tbody>${rows}</tbody>

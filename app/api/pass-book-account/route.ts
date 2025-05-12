@@ -61,13 +61,13 @@ export async function POST(req: NextRequest) {
             font-size: 12pt;
             margin: 2mm 0;
             width: 100%;
-            padding-top: 5mm;
+            // padding-top: 5mm;
           }
           .account-number {
             font-size: 14pt;
             font-weight: bold;
             margin: 5mm 0;
-            padding-top: 20mm;
+            padding-top: 80mm;
           }
           .balance {
             font-size: 18pt;

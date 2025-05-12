@@ -77,7 +77,7 @@ export async function POST(req: NextRequest) {
         ${tx.type === "DEPOSIT" ? "DEP" : tx.type === "WITHDRAW" ? "WD" : "INT"}
       </td>
       <td style="width: 30%; text-align: ${
-        tx.type === "WITHDRAW" ? "right" : "left"
+        tx.type === "WITHDRAW" ? "left" : "right"
       }; ${tx.printed ? "color: transparent" : ""}">
       ${parseFloat(tx.amount).toLocaleString("th-TH", {
         minimumFractionDigits: 2,

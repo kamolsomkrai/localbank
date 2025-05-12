@@ -1,27 +1,31 @@
+// app/print-passbook/page.tsx
 "use client";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 
 export default function PrintPassbook() {
   const [accountNumber, setAccountNumber] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const router = useRouter();
 
   const handlePrint = async (apiEndpoint: string) => {
     if (!accountNumber) {
       setError("กรุณาระบุหมายเลขบัญชี");
       return;
     }
+
     setLoading(true);
     setError("");
 
     try {
+      // เปิดหน้าต่างใหม่ก่อนเพื่อป้องกัน popup blocker
+      const printWindow = window.open('', '_blank');
+      if (!printWindow) {
+        throw new Error("ไม่สามารถเปิดหน้าต่างพิมพ์ได้");
+      }
+
       const response = await fetch(apiEndpoint, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ accountNumber }),
       });
 
@@ -30,14 +34,9 @@ export default function PrintPassbook() {
         throw new Error(errorData.error || "เกิดข้อผิดพลาด");
       }
 
-      // เปิดหน้าพิมพ์ในแท็บใหม่
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-
-      const printWindow = window.open(url, "_blank");
-      if (!printWindow) {
-        throw new Error("ไม่สามารถเปิดหน้าต่างพิมพ์");
-      }
+      const html = await response.text();
+      printWindow.document.write(html);
+      printWindow.document.close();
 
     } catch (err) {
       setError(err.message);

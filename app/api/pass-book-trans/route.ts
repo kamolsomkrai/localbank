@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
       }">
       ${tx.type === "DEPOSIT" ? "DEP" : tx.type === "WITHDRAW" ? "WD" : "INT"}
     </td>
-    <td style="${paddingStyle} width: 40%; text-align: ${
+    <td style="${paddingStyle} width: 43%; text-align: ${
         tx.type === "WITHDRAW" ? "left" : "right"
       }; ${tx.printed ? "color: transparent" : ""}">
     ${parseFloat(tx.amount).toLocaleString("th-TH", {
@@ -89,7 +89,7 @@ export async function POST(req: NextRequest) {
       maximumFractionDigits: 2,
     })}
     </td>
-    <td style="${paddingStyle} width: 20%; text-align: right; ${
+    <td style="${paddingStyle} width: 22%; text-align: right; ${
         tx.printed ? "color: transparent" : ""
       }">
     ${parseFloat(tx.balanceAfter).toLocaleString("th-TH", {
@@ -97,7 +97,7 @@ export async function POST(req: NextRequest) {
       maximumFractionDigits: 2,
     })}
     </td>
-    <td style="${paddingStyle} width: 20%; text-align: right; ${
+    <td style="${paddingStyle} width: 15%; text-align: right; ${
         tx.printed ? "color: transparent" : ""
       }">${tx.staffId?.split("-")[1] || ""}</td>
   </tr>
@@ -130,57 +130,68 @@ export async function POST(req: NextRequest) {
             <tr style="display: none">
               <th style="width: 15%; text-align: left;">วันที่</th>
               <th style="width: 5%; text-align: center;">ประเภท</th>
-              <th style="width: 40%; text-align: right;">จำนวน</th>
-              <th style="width: 20%; text-align: right; margin-left: 2mm;">คงเหลือ</th>
-              <th style="width: 20%; text-align: right; margin-left: 5mm;">Staff</th>
+              <th style="width: 43%; text-align: right;">จำนวน</th>
+              <th style="width: 22%; text-align: right; margin-left: 2mm;">คงเหลือ</th>
+              <th style="width: 15%; text-align: right; margin-left: 5mm;">Staff</th>
             </tr>
           </thead>
           <tbody>${rows}</tbody>
         </table>
         <script>
-          // ส่งข้อมูลกลับไปยังเซิร์ฟเวอร์เมื่อพิมพ์เสร็จ
-          async function confirmPrint() {
-            try {
-              const response = await fetch('/api/update-print-status', {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                  transactionIds: ${JSON.stringify(transactionIds)},
-                  printed: true
-                }),
-              });
-              
-              if (!response.ok) {
-                throw new Error('Failed to update print status');
-              }
-              return await response.json();
-            } catch (error) {
-              console.error('Error:', error);
-              // ลองอีกครั้งหลังจากดีเลย์
-              setTimeout(confirmPrint, 1000);
-            }
-          }
+          // ในส่วน script ของ HTML ที่ส่งกลับไป
+const transactionIds = ${JSON.stringify(transactionIds)};
 
-          // ตรวจสอบการพิมพ์
-          let printAttempted = false;
-          
-          window.onbeforeprint = () => {
-            printAttempted = true;
-          };
-          
-          window.onafterprint = async () => {
-            if (printAttempted) {
-              await confirmPrint();
-            }
-            window.close();
-          };
-          
-          // เปิดหน้าต่างพิมพ์หลังจากตั้งค่า event listeners แล้ว
-          setTimeout(() => {
-            window.print();
-          }, 100);
+// ใช้ MutationObserver เพื่อตรวจสอบเมื่อ DOM พร้อม
+const observer = new MutationObserver(() => {
+  // ตั้งค่า event listeners เมื่อ DOM พร้อม
+  setupPrintListeners();
+  observer.disconnect();
+});
+
+observer.observe(document, { childList: true, subtree: true });
+
+function setupPrintListeners() {
+  let printAttempted = false;
+  
+  // ใช้ทั้งวิธีเก่าและใหม่เพื่อความเข้ากันได้
+  window.onbeforeprint = window.addEventListener('beforeprint', () => {
+    printAttempted = true;
+    console.log('Print dialog opened');
+  });
+  
+  window.onafterprint = window.addEventListener('afterprint', async () => {
+    console.log('Print dialog closed');
+    if (printAttempted) {
+      await updatePrintStatus(true);
+      // รอสักครู่ก่อนปิดหน้าต่าง
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+    window.close();
+  });
+  
+  // ฟังก์ชันอัปเดตสถานะ
+  async function updatePrintStatus(printed) {
+    try {
+      console.log('Updating print status to:', printed);
+      const response = await fetch('/api/update-print-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ transactionIds, printed }),
+      });
+      
+      if (!response.ok) throw new Error('Update failed');
+      console.log('Update successful');
+    } catch (error) {
+      console.error('Update error:', error);
+    }
+  }
+
+  // เปิดหน้าต่างพิมพ์หลังจากตั้งค่า listeners แล้ว
+  setTimeout(() => {
+    console.log('Initiating print');
+    window.print();
+  }, 300);
+}
         </script>
       </body>
     </html>

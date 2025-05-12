@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { useSession, signOut } from 'next-auth/react'
-import { Menu, User, Banknote, Home, ArrowRightCircle, Search } from 'lucide-react'
+import { Menu, User, Banknote, Home, ArrowRightCircle, Search, ReceiptText } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -40,6 +40,11 @@ export default function Navbar() {
       name: "ฝาก/ถอนเงิน",
       href: "/transactions",
       icon: <ArrowRightCircle className="w-4 h-4" />,
+    },
+    {
+      name: "ปรับสมุด",
+      href: "/print",
+      icon: <ReceiptText className="w-4 h-4" />,
     },
   ]
 

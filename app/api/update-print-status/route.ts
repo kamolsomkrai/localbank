@@ -44,7 +44,8 @@ export async function POST(req: NextRequest) {
       {
         success: false,
         error: "ไม่สามารถอัปเดตสถานะการพิมพ์",
-        details: error.message,
+        details:
+          error instanceof Error ? error.message : "Unknown error occurred",
       },
       { status: 500 }
     );

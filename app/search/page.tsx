@@ -59,9 +59,9 @@ export default function SearchPage() {
   }
 
   const accountTypeMap = {
-    SAVINGS: { label: 'ออมทรัพย์', variant: 'default' },
-    FIXED: { label: 'เงินฝากประจำ', variant: 'secondary' },
-    CURRENT: { label: 'กระแสรายวัน', variant: 'outline' },
+    SAVINGS: { label: 'ออมทรัพย์', variant: 'default' as const },
+    FIXED: { label: 'เงินฝากประจำ', variant: 'secondary' as const },
+    CURRENT: { label: 'กระแสรายวัน', variant: 'outline' as const },
   };
 
   const copyToClipboard = (accountNumber: string) => {

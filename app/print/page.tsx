@@ -38,8 +38,8 @@ export default function PrintPassbook() {
       printWindow.document.write(html);
       printWindow.document.close();
 
-    } catch (err) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'An unknown error occurred');
       console.error("Print error:", err);
     } finally {
       setLoading(false);

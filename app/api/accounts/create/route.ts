@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { generateThaiAccountNumber } from "@/lib/account";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/lib/auth"; // ✱ นำเข้า authOptions จาก lib/auth ไม่ใช่จาก route
 
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
@@ -23,7 +23,6 @@ export async function POST(req: Request) {
 
   const number = await generateThaiAccountNumber();
 
-  // สร้าง Account พร้อมบันทึก Transaction ฝากแรกเข้า
   const account = await prisma.account.create({
     data: {
       number,
@@ -39,13 +38,11 @@ export async function POST(req: Request) {
           amount: initialDeposit,
           balanceAfter: initialDeposit,
           type: "DEPOSIT",
-          staffId: session.user.id, // เชื่อมกับ Staff ผ่าน transaction
+          staffId: session.user.id,
         },
       },
     },
-    include: {
-      transactions: true, // ถ้าอยากดึง transaction กลับมาด้วย
-    },
+    include: { transactions: true },
   });
 
   return NextResponse.json(account);

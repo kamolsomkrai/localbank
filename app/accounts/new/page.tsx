@@ -267,7 +267,7 @@ export default function NewAccountPage() {
                     />
                     {!formData.accountName && (
                       <p className="text-sm text-gray-500 mt-1">
-                        หากไม่กรอก จะใช้ชื่อ "<span className="font-medium">{`${formData.prefixName}${formData.firstName} ${formData.lastName}`}</span>" โดยอัตโนมัติ
+                        หากไม่กรอก จะใช้ชื่อ &ldquo;<span className="font-medium">{`${formData.prefixName}${formData.firstName} ${formData.lastName}`}</span>&rdquo; โดยอัตโนมัติ
                       </p>
                     )}
                   </div>

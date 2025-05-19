@@ -84,7 +84,7 @@ export async function POST(req: NextRequest) {
     <td style="${paddingStyle} width: 43%; text-align: ${
         tx.type === "WITHDRAW" ? "left" : "right"
       }; ${tx.printed ? "color: transparent" : ""}">
-    ${parseFloat(tx.amount).toLocaleString("th-TH", {
+    ${parseFloat(tx.amount.toString()).toLocaleString("th-TH", {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     })}
@@ -92,7 +92,7 @@ export async function POST(req: NextRequest) {
     <td style="${paddingStyle} width: 22%; text-align: right; ${
         tx.printed ? "color: transparent" : ""
       }">
-    ${parseFloat(tx.balanceAfter).toLocaleString("th-TH", {
+    ${parseFloat(tx.balanceAfter.toString()).toLocaleString("th-TH", {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     })}
@@ -110,7 +110,7 @@ export async function POST(req: NextRequest) {
     <html lang="th">
       <head>
         <meta charset="utf-8">
-        <title>สมุดบัญชี - ${account.name}</title>
+        <title>สมุดบัญชี - ${account.id}</title>
         <style>
           body {
             font-family: "Courier New", monospace;

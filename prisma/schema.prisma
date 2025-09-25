@@ -26,6 +26,7 @@ enum AccountType {
 enum TxType {
   DEPOSIT
   WITHDRAW
+  INTEREST
 }
 
 model Staff {
@@ -38,6 +39,7 @@ model Staff {
   accounts     AccountUser[]
   sessions     Session[]
   transactions Transaction[] @relation("StaffTransactions")
+  interestLogs InterestCalculationLog[]
 }
 
 model AccountUser {
@@ -89,4 +91,16 @@ model InterestRate {
   rate        Float
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
+}
+
+model InterestCalculationLog {
+  id                 String    @id @default(cuid())
+  type               AccountType
+  periodIdentifier   String    @unique
+  executedAt         DateTime  @default(now())
+  executedBy         Staff     @relation(fields: [staffId], references: [id])
+  staffId            String    @db.Uuid // << แก้ไขโดยการเพิ่ม @db.Uuid ตรงนี้
+  status             String
+  accountsAffected   Int
+  totalInterestPaid  Decimal
 }

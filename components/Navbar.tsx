@@ -46,6 +46,16 @@ export default function Navbar() {
       href: "/print",
       icon: <ReceiptText className="w-4 h-4" />,
     },
+    {
+      name: "จัดการดอกเบี้ย",
+      href: "/interest",
+      icon: <ReceiptText className="w-4 h-4" />,
+    },
+    {
+      name: "รายงานบัญชี",
+      href: "/accounts/report",
+      icon: <ReceiptText className="w-4 h-4" />,
+    },
   ]
 
   return (

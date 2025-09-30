@@ -1,17 +1,21 @@
 // components/account-growth.tsx
 "use client"
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Progress } from '@/components/ui/progress'
-import { TrendingUp, Users } from 'lucide-react'
+import { Line } from 'react-chartjs-2'
+import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js';
+
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
+
+interface MonthlyData {
+  month: number;
+  newAccounts: number;
+}
 
 interface AccountGrowthProps {
-  data?: {
-    monthlyNewAccounts: number
-    growthRate: number
-  }
-  isLoading?: boolean
+  data?: MonthlyData[];
+  isLoading?: boolean;
 }
 
 export function AccountGrowth({ data, isLoading = false }: AccountGrowthProps) {
@@ -20,6 +24,7 @@ export function AccountGrowth({ data, isLoading = false }: AccountGrowthProps) {
       <Card>
         <CardHeader>
           <CardTitle>Account Growth</CardTitle>
+          <CardDescription>จำนวนบัญชีใหม่ที่เปิดในแต่ละเดือน</CardDescription>
         </CardHeader>
         <CardContent>
           <Skeleton className="w-full h-[300px]" />
@@ -28,35 +33,45 @@ export function AccountGrowth({ data, isLoading = false }: AccountGrowthProps) {
     )
   }
 
-  const { monthlyNewAccounts, growthRate } = data
-  const isPositive = growthRate >= 0
+  const monthLabels = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+
+  const chartData = {
+    labels: data.map(d => monthLabels[d.month]),
+    datasets: [
+      {
+        label: 'บัญชีเปิดใหม่',
+        data: data.map(d => d.newAccounts),
+        borderColor: 'rgba(59, 130, 246, 1)',
+        backgroundColor: 'rgba(59, 130, 246, 0.5)',
+        fill: true,
+        tension: 0.1
+      }
+    ]
+  };
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>Account Growth</CardTitle>
+        <CardDescription>จำนวนบัญชีใหม่ที่เปิดในแต่ละเดือน</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <div className="p-3 rounded-full bg-primary/10">
-              <Users className="h-6 w-6 text-primary" />
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">New Accounts</p>
-              <p className="text-2xl font-bold">{monthlyNewAccounts}</p>
-            </div>
-          </div>
-          <div className={`flex items-center ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
-            <TrendingUp className={`h-5 w-5 mr-1 ${!isPositive ? 'transform rotate-180' : ''}`} />
-            <span>{Math.abs(growthRate).toFixed(1)}%</span>
-          </div>
-        </div>
-
-        <Progress value={Math.min(100, Math.max(0, growthRate))} className="h-2" />
-
-        <div className="text-sm text-muted-foreground">
-          {isPositive ? 'Increase' : 'Decrease'} from last month
+      <CardContent>
+        <div className="h-[300px] w-full flex items-center justify-center">
+          <Line
+            data={chartData}
+            options={{
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: { display: false }
+              },
+              scales: {
+                y: {
+                  beginAtZero: true,
+                }
+              }
+            }}
+          />
         </div>
       </CardContent>
     </Card>

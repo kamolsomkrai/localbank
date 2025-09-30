@@ -3,19 +3,19 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Download, Users } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Download, Users, ArrowUpDown } from "lucide-react";
+import { useAccountsTable } from "@/hooks/use-accounts-table";
+// --- CHANGE START: Import flexRender ---
+import { type ColumnDef, flexRender } from "@tanstack/react-table";
+// --- CHANGE END ---
 import * as XLSX from "xlsx";
+import { Badge } from "@/components/ui/badge";
 
+// Define Account Type remains the same
 type Account = {
   id: string;
   number: string;
@@ -23,17 +23,71 @@ type Account = {
   prefix: string;
   firstName: string;
   lastName: string;
-  type: string;
+  type: "SAVINGS" | "FIXED" | "CURRENT";
   balance: number;
   createdAt: string;
 };
 
+// Define Table Columns remains the same
+const columns: ColumnDef<Account>[] = [
+  {
+    accessorKey: "number",
+    header: "เลขที่บัญชี",
+    cell: ({ row }) => <div className="font-mono">{row.getValue("number")}</div>,
+  },
+  {
+    accessorKey: "accountName",
+    header: "ชื่อบัญชี",
+  },
+  {
+    id: "customerName",
+    header: "ชื่อลูกค้า",
+    accessorFn: row => `${row.prefix}${row.firstName} ${row.lastName}`,
+  },
+  {
+    accessorKey: "type",
+    header: "ประเภท",
+    cell: ({ row }) => {
+      const type = row.getValue("type") as Account["type"];
+      const variant: "default" | "secondary" | "outline" =
+        type === "SAVINGS" ? "default" : type === "FIXED" ? "secondary" : "outline";
+      const text = type === "SAVINGS" ? "ออมทรัพย์" : type === "FIXED" ? "ฝากประจำ" : "กระแสรายวัน";
+      return <Badge variant={variant}>{text}</Badge>;
+    },
+  },
+  {
+    accessorKey: "balance",
+    header: ({ column }) => (
+      <Button
+        variant="ghost"
+        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        className="text-right w-full p-0 justify-end"
+      >
+        ยอดคงเหลือ
+        <ArrowUpDown className="ml-2 h-4 w-4" />
+      </Button>
+    ),
+    cell: ({ row }) => (
+      <div className="text-right font-mono font-semibold">
+        {Number(row.getValue("balance")).toLocaleString('th-TH', { style: 'currency', currency: 'THB' })}
+      </div>
+    ),
+  },
+  {
+    accessorKey: "createdAt",
+    header: "วันที่เปิดบัญชี",
+    cell: ({ row }) => new Date(row.getValue("createdAt")).toLocaleDateString('th-TH'),
+  },
+];
+
+// Main Component
 export default function AccountsReportPage() {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     async function fetchAccounts() {
+      setIsLoading(true);
       try {
         const response = await fetch("/api/accounts/all");
         if (!response.ok) throw new Error("Failed to fetch");
@@ -48,83 +102,91 @@ export default function AccountsReportPage() {
     fetchAccounts();
   }, []);
 
-  const handleExport = () => {
-    const dataToExport = accounts.map(acc => ({
-      "เลขที่บัญชี": acc.number,
-      "ชื่อบัญชี": acc.accountName,
-      "ชื่อลูกค้า": `${acc.prefix}${acc.firstName} ${acc.lastName}`,
-      "ประเภท": acc.type,
-      "ยอดคงเหลือ": acc.balance,
-      "วันที่เปิดบัญชี": new Date(acc.createdAt).toLocaleDateString('th-TH'),
-    }));
+  const { table, setGlobalFilter } = useAccountsTable(columns, accounts);
 
+  const handleExport = () => {
+    const dataToExport = table.getFilteredRowModel().rows.map(row => ({
+      "เลขที่บัญชี": row.original.number,
+      "ชื่อบัญชี": row.original.accountName,
+      "ชื่อลูกค้า": `${row.original.prefix}${row.original.firstName} ${row.original.lastName}`,
+      "ประเภท": row.original.type,
+      "ยอดคงเหลือ": row.original.balance,
+      "วันที่เปิดบัญชี": new Date(row.original.createdAt).toLocaleDateString('th-TH'),
+    }));
     const worksheet = XLSX.utils.json_to_sheet(dataToExport);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Accounts");
-    XLSX.writeFile(workbook, "accounts_report.xlsx");
+    XLSX.writeFile(workbook, `accounts_report_${new Date().toISOString().split('T')[0]}.xlsx`);
   };
 
   return (
     <div className="container mx-auto py-8 px-4">
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div className="space-y-1">
-            <CardTitle className="flex items-center gap-2 text-2xl">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-3 text-2xl">
+            <div className="flex-shrink-0 bg-primary text-primary-foreground p-3 rounded-lg">
               <Users className="w-6 h-6" />
-              รายงานข้อมูลบัญชีทั้งหมด
-            </CardTitle>
-          </div>
-          <Button onClick={handleExport} disabled={accounts.length === 0}>
-            <Download className="mr-2 h-4 w-4" />
-            Export to Excel
-          </Button>
+            </div>
+            <span>รายงานข้อมูลบัญชีทั้งหมด</span>
+          </CardTitle>
+          <CardDescription>ค้นหา, จัดเรียง และส่งออกข้อมูลบัญชีทั้งหมดในระบบ</CardDescription>
         </CardHeader>
         <CardContent>
+          <div className="flex items-center justify-between gap-4 mb-4">
+            <Input
+              placeholder="ค้นหาทั้งหมด..."
+              onChange={(event) => setGlobalFilter(event.target.value)}
+              className="max-w-sm"
+            />
+            <Button onClick={handleExport} disabled={table.getFilteredRowModel().rows.length === 0}>
+              <Download className="mr-2 h-4 w-4" />
+              Export to Excel
+            </Button>
+          </div>
           <div className="rounded-lg border">
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead>เลขที่บัญชี</TableHead>
-                  <TableHead>ชื่อบัญชี</TableHead>
-                  <TableHead>ชื่อลูกค้า</TableHead>
-                  <TableHead>ประเภท</TableHead>
-                  <TableHead className="text-right">ยอดคงเหลือ (บาท)</TableHead>
-                  <TableHead>วันที่เปิดบัญชี</TableHead>
-                </TableRow>
+                {table.getHeaderGroups().map(headerGroup => (
+                  <TableRow key={headerGroup.id}>
+                    {headerGroup.headers.map(header => (
+                      <TableHead key={header.id}>
+                        {/* --- CHANGE START: Use flexRender for header --- */}
+                        {header.isPlaceholder ? null : flexRender(
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
+                        {/* --- CHANGE END --- */}
+                      </TableHead>
+                    ))}
+                  </TableRow>
+                ))}
               </TableHeader>
               <TableBody>
                 {isLoading ? (
-                  [...Array(5)].map((_, i) => (
-                    <TableRow key={i}>
-                      <TableCell colSpan={6}>
-                        <Skeleton className="h-6 w-full" />
-                      </TableCell>
-                    </TableRow>
+                  [...Array(10)].map((_, i) => (
+                    <TableRow key={i}><TableCell colSpan={columns.length}><Skeleton className="h-6 w-full" /></TableCell></TableRow>
                   ))
-                ) : accounts.length > 0 ? (
-                  accounts.map((acc) => (
-                    <TableRow key={acc.id}>
-                      <TableCell className="font-mono">{acc.number}</TableCell>
-                      <TableCell>{acc.accountName}</TableCell>
-                      <TableCell>{`${acc.prefix}${acc.firstName} ${acc.lastName}`}</TableCell>
-                      <TableCell>{acc.type}</TableCell>
-                      <TableCell className="text-right font-mono">
-                        {Number(acc.balance).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </TableCell>
-                      <TableCell>
-                        {new Date(acc.createdAt).toLocaleDateString('th-TH')}
-                      </TableCell>
+                ) : table.getRowModel().rows?.length ? (
+                  table.getRowModel().rows.map(row => (
+                    <TableRow key={row.id}>
+                      {row.getVisibleCells().map(cell => (
+                        <TableCell key={cell.id}>
+                          {/* --- CHANGE START: Use flexRender for cell --- */}
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                          {/* --- CHANGE END --- */}
+                        </TableCell>
+                      ))}
                     </TableRow>
                   ))
                 ) : (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center">
-                      ไม่พบข้อมูลบัญชี
-                    </TableCell>
-                  </TableRow>
+                  <TableRow><TableCell colSpan={columns.length} className="h-24 text-center">ไม่พบข้อมูล</TableCell></TableRow>
                 )}
               </TableBody>
             </Table>
+          </div>
+          <div className="flex items-center justify-end space-x-2 py-4">
+            <Button variant="outline" size="sm" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}>ก่อนหน้า</Button>
+            <Button variant="outline" size="sm" onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}>ถัดไป</Button>
           </div>
         </CardContent>
       </Card>

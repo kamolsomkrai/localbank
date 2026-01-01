@@ -25,7 +25,7 @@ export const authOptions: AuthOptions = {
             id: user.id,
             name: user.name,
             email: user.email,
-            role: user.role === "ADMIN" ? "STAFF" : user.role,
+            role: user.role,
           };
         }
         return null;

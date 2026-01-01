@@ -137,61 +137,63 @@ export async function POST(req: NextRequest) {
           </thead>
           <tbody>${rows}</tbody>
         </table>
+        <div id="confirm-dialog" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border: 2px solid black; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: center; z-index: 1000;">
+          <h3 style="margin-top: 0;">ผลการพิมพ์</h3>
+          <p>พิมพ์รายการลงสมุดบัญชีเรียบร้อยแล้วใช่หรือไม่?</p>
+          <div style="margin-top: 15px;">
+            <button onclick="confirmPrint(true)" style="background: #22c55e; color: white; border: none; padding: 8px 16px; margin: 0 5px; cursor: pointer; border-radius: 4px;">พิมพ์สำเร็จ</button>
+            <button onclick="confirmPrint(false)" style="background: #ef4444; color: white; border: none; padding: 8px 16px; margin: 0 5px; cursor: pointer; border-radius: 4px;">ไม่ได้พิมพ์ / ยกเลิก</button>
+          </div>
+        </div>
+        <div id="overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 999;"></div>
+
         <script>
-          // ในส่วน script ของ HTML ที่ส่งกลับไป
-const transactionIds = ${JSON.stringify(transactionIds)};
+          const transactionIds = ${JSON.stringify(transactionIds)};
 
-// ใช้ MutationObserver เพื่อตรวจสอบเมื่อ DOM พร้อม
-const observer = new MutationObserver(() => {
-  // ตั้งค่า event listeners เมื่อ DOM พร้อม
-  setupPrintListeners();
-  observer.disconnect();
-});
+          // รอให้ DOM โหลดและพิมพ์อัตโนมัติ
+          window.onload = () => {
+             // Delay เล็กน้อยเพื่อให้ render เสร็จสมบูรณ์
+             setTimeout(() => {
+               window.print();
+             }, 500);
+          };
 
-observer.observe(document, { childList: true, subtree: true });
+          // จับ event หลังปิดหน้าต่างพิมพ์ (ทั้งพิมพ์เสร็จและยกเลิก)
+          window.onafterprint = () => {
+            showConfirmation();
+          };
 
-function setupPrintListeners() {
-  let printAttempted = false;
-  
-  // ใช้ทั้งวิธีเก่าและใหม่เพื่อความเข้ากันได้
-  window.onbeforeprint = window.addEventListener('beforeprint', () => {
-    printAttempted = true;
-    console.log('Print dialog opened');
-  });
-  
-  window.onafterprint = window.addEventListener('afterprint', async () => {
-    console.log('Print dialog closed');
-    if (printAttempted) {
-      await updatePrintStatus(true);
-      // รอสักครู่ก่อนปิดหน้าต่าง
-      await new Promise(resolve => setTimeout(resolve, 500));
-    }
-    window.close();
-  });
-  
-  // ฟังก์ชันอัปเดตสถานะ
-  async function updatePrintStatus(printed) {
-    try {
-      console.log('Updating print status to:', printed);
-      const response = await fetch('/api/update-print-status', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ transactionIds, printed }),
-      });
-      
-      if (!response.ok) throw new Error('Update failed');
-      console.log('Update successful');
-    } catch (error) {
-      console.error('Update error:', error);
-    }
-  }
+          // Fallback สำหรับบาง browser ที่ onafterprint ไม่ทำงานสมบูรณ์
+          // เราจะแสดง dialog เสมอเมื่อ window กลับมา focus หรือผ่านไปสักพัก
+          /*
+          window.onfocus = () => {
+             // สามารถเพิ่ม logic เช็คว่าสั่งพิมพ์ไปแล้วหรือยังได้ถ้าจำเป็น
+          };
+          */
 
-  // เปิดหน้าต่างพิมพ์หลังจากตั้งค่า listeners แล้ว
-  setTimeout(() => {
-    console.log('Initiating print');
-    window.print();
-  }, 300);
-}
+          function showConfirmation() {
+            document.getElementById('confirm-dialog').style.display = 'block';
+            document.getElementById('overlay').style.display = 'block';
+          }
+
+          async function confirmPrint(success) {
+            if (success) {
+              try {
+                const response = await fetch('/api/update-print-status', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ transactionIds, printed: true }),
+                });
+                
+                if (!response.ok) throw new Error('Update failed');
+                alert('บันทึกสถานะเรียบร้อย');
+              } catch (error) {
+                alert('เกิดข้อผิดพลาดในการบันทึกสถานะ: ' + error.message);
+                return; // ไม่ปิดหน้าต่างหาก error
+              }
+            }
+            window.close();
+          }
         </script>
       </body>
     </html>

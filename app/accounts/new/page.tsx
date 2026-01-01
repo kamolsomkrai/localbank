@@ -1,6 +1,6 @@
 // app/accounts/new/page.tsx
 "use client"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { api } from "@/lib/api"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -10,12 +10,18 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Toaster } from "@/components/ui/sonner"
 import { toast } from "sonner"
 import { Badge } from "@/components/ui/badge"
-import { Progress } from "@/components/ui/progress"
+import { UserPlus, PiggyBank, Briefcase, CheckCircle2, ArrowRight, ArrowLeft, Loader2, CreditCard } from "lucide-react"
+
+interface InterestRate {
+  accountType: "SAVINGS" | "FIXED"
+  rate: number
+}
 
 export default function NewAccountPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [currentStep, setCurrentStep] = useState(1)
   const [accountType, setAccountType] = useState("SAVINGS")
+  const [rates, setRates] = useState<InterestRate[]>([])
   const [formData, setFormData] = useState({
     prefixName: "",
     firstName: "",
@@ -24,6 +30,25 @@ export default function NewAccountPage() {
     accountName: "",
     initialDeposit: "",
   })
+
+  useEffect(() => {
+    fetchRates()
+  }, [])
+
+  const fetchRates = async () => {
+    try {
+      const { data } = await api.get("/interest-rates")
+      setRates(data)
+    } catch (error) {
+      console.error("Failed to fetch rates:", error)
+    }
+  }
+
+  const getRateDisplay = (type: "SAVINGS" | "FIXED", defaultRate: string) => {
+    const rateObj = rates.find(r => r.accountType === type)
+    if (!rateObj) return defaultRate
+    return `${(rateObj.rate * 100).toFixed(2)}% ต่อปี`
+  }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target
@@ -55,6 +80,7 @@ export default function NewAccountPage() {
           <p className="text-sm">เลขที่บัญชี: {response.data.accountNumber}</p>
         </div>,
         {
+          duration: 5000,
           action: {
             label: "คัดลอก",
             onClick: () => {
@@ -75,12 +101,9 @@ export default function NewAccountPage() {
       })
       setCurrentStep(1)
     } catch (error: any) {
-      toast.error(
-        <div className="space-y-1">
-          <h4 className="font-medium">เกิดข้อผิดพลาด</h4>
-          <p className="text-sm">{error.response?.data?.message || "ไม่สามารถเปิดบัญชีได้"}</p>
-        </div>
-      )
+      toast.error("เกิดข้อผิดพลาด", {
+        description: error.response?.data?.message || "ไม่สามารถเปิดบัญชีได้",
+      })
     } finally {
       setIsLoading(false)
     }
@@ -90,114 +113,116 @@ export default function NewAccountPage() {
     {
       id: "SAVINGS",
       name: "ออมทรัพย์",
-      icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
-          <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
-        </svg>
-      ),
-      description: "เหมาะสำหรับการออมเงินระยะสั้น",
-      features: ["ถอนเงินได้ตลอดเวลา", "ดอกเบี้ย 0.001% ต่อปี", "ไม่มีเงินฝากขั้นต่ำ"],
-      color: "text-blue-600"
+      icon: <PiggyBank className="w-6 h-6" />,
+      description: "เหมาะสำหรับการออมเงินระยะสั้น คล่องตัวสูง",
+      features: ["ถอนเงินได้ตลอดเวลา", `ดอกเบี้ย ${getRateDisplay("SAVINGS", "0.50% ต่อปี")}`, "ไม่มีเงินฝากขั้นต่ำ"],
+      color: "text-emerald-600",
+      bgColor: "bg-emerald-50",
+      borderColor: "peer-data-[state=checked]:border-emerald-500",
+      activeBg: "peer-data-[state=checked]:bg-emerald-50"
     },
     {
       id: "FIXED",
       name: "เงินฝากประจำ",
-      icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
-          <rect width="20" height="12" x="2" y="6" rx="2" />
-          <circle cx="12" cy="12" r="2" />
-          <path d="M6 12h.01M18 12h.01" />
-        </svg>
-      ),
-      description: "อัตราดอกเบี้ยสูงกว่า",
-      features: ["ดอกเบี้ย 2% ต่อปี", "ไม่มีเงินฝากขั้นต่ำ", "ระยะเวลาขั้นต่ำ 12 เดือน"],
-      color: "text-emerald-600"
+      icon: <Briefcase className="w-6 h-6" />,
+      description: "ออมระยะยาวเพื่อผลตอบแทนที่สูงกว่า",
+      features: [`ดอกเบี้ย ${getRateDisplay("FIXED", "2.00% ต่อปี")}`, "ไม่มีเงินฝากขั้นต่ำ", "ระยะเวลาขั้นต่ำ 12 เดือน"],
+      color: "text-amber-600",
+      bgColor: "bg-amber-50",
+      borderColor: "peer-data-[state=checked]:border-amber-500",
+      activeBg: "peer-data-[state=checked]:bg-amber-50"
     },
-    // {
-    //   id: "CURRENT",
-    //   name: "กระแสรายวัน",
-    //   icon: (
-    //     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
-    //       <line x1="12" x2="12" y1="2" y2="22" />
-    //       <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-    //     </svg>
-    //   ),
-    //   description: "เหมาะสำหรับธุรกิจ",
-    //   features: ["ไม่มีดอกเบี้ย", "บริการเช็ค", "โอนเงินไม่จำกัดครั้ง"],
-    //   color: "text-purple-600"
-    // }
   ]
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-3xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-10">
-          <h1 className="text-3xl font-bold text-gray-900 mb-3">เปิดบัญชีใหม่</h1>
-          <p className="text-lg text-gray-600">เพียง 3 ขั้นตอนง่ายๆ เพื่อเริ่มใช้บริการ</p>
-        </div>
+    <div className="container mx-auto py-8 px-4 max-w-4xl">
+      <Card className="border-0 shadow-lg overflow-hidden bg-white">
+        <CardHeader className="bg-gradient-to-r from-blue-800 to-blue-600 text-white pb-8 pt-8 px-8">
+           <div className="flex items-center gap-4">
+              <div className="p-3 bg-white/10 rounded-xl backdrop-blur-sm">
+                 <UserPlus className="w-8 h-8 text-blue-200" />
+              </div>
+              <div>
+                <CardTitle className="text-2xl font-bold">
+                  เปิดบัญชีใหม่
+                </CardTitle>
+                <CardDescription className="text-blue-100 mt-1">
+                  กรอกข้อมูลเพื่อสร้างบัญชีใหม่สำหรับสมาชิก
+                </CardDescription>
+              </div>
+           </div>
+        </CardHeader>
 
-        {/* Progress Bar */}
-        <div className="mb-8 space-y-2">
-          <div className="flex justify-between text-sm text-gray-600 mb-1">
-            <span>ขั้นตอนที่ {currentStep} จาก 3</span>
-            <span>{Math.round((currentStep / 3) * 100)}%</span>
+        {/* Progress Steps */}
+        <div className="bg-slate-50 border-b px-8 py-4">
+          <div className="flex justify-between items-center relative">
+             <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-1 bg-slate-200 -z-10 rounded-full"></div>
+             <div 
+                className="absolute left-0 top-1/2 -translate-y-1/2 h-1 bg-blue-600 -z-10 rounded-full transition-all duration-500"
+                style={{ width: `${((currentStep - 1) / 2) * 100}%` }}
+             ></div>
+
+             {[1, 2, 3].map((step) => (
+                <div key={step} className="flex flex-col items-center gap-2 bg-slate-50 px-2">
+                   <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm transition-all duration-300 border-2 ${
+                      step <= currentStep 
+                      ? "bg-blue-600 border-blue-600 text-white shadow-md scale-110" 
+                      : "bg-white border-slate-300 text-slate-400"
+                   }`}>
+                      {step < currentStep ? <CheckCircle2 className="w-6 h-6" /> : step}
+                   </div>
+                   <span className={`text-xs font-semibold ${step <= currentStep ? "text-blue-700" : "text-slate-400"}`}>
+                      {step === 1 && "ประเภทบัญชี"}
+                      {step === 2 && "ข้อมูลส่วนตัว"}
+                      {step === 3 && "รายละเอียด"}
+                   </span>
+                </div>
+             ))}
           </div>
-          <Progress value={(currentStep / 3) * 100} className="h-2" />
         </div>
-
-        {/* Form Container */}
-        <Card className="shadow-xl border-0">
-          <CardHeader className="border-b pb-4">
-            <CardTitle className="text-xl font-semibold text-gray-800">
-              {currentStep === 1 && "เลือกประเภทบัญชี"}
-              {currentStep === 2 && "ข้อมูลส่วนตัว"}
-              {currentStep === 3 && "ข้อมูลบัญชี"}
-            </CardTitle>
-            <CardDescription className="text-gray-600">
-              {currentStep === 1 && "เลือกบัญชีที่เหมาะกับความต้องการของคุณ"}
-              {currentStep === 2 && "กรอกข้อมูลส่วนตัวของคุณ"}
-              {currentStep === 3 && "กำหนดรายละเอียดบัญชีของคุณ"}
-            </CardDescription>
-          </CardHeader>
-
-          <CardContent className="pt-6">
-            <form onSubmit={handleSubmit}>
+        
+        <CardContent className="p-8">
+          <form onSubmit={handleSubmit}>
+            <div className="min-h-[400px]">
               {/* Step 1: Account Type */}
               {currentStep === 1 && (
-                <div className="space-y-6">
-                  <RadioGroup value={accountType} onValueChange={setAccountType} className="grid gap-4">
+                <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+                  <div className="text-center mb-6">
+                     <h3 className="text-lg font-semibold text-slate-800">เลือกประเภทบัญชี</h3>
+                     <p className="text-sm text-slate-500">เลือกบัญชีที่ตรงกับความต้องการของสมาชิก</p>
+                  </div>
+                  <RadioGroup value={accountType} onValueChange={setAccountType} className="grid md:grid-cols-2 gap-4">
                     {accountTypes.map((type) => (
                       <div key={type.id}>
                         <RadioGroupItem value={type.id} id={type.id} className="sr-only peer" />
                         <Label
                           htmlFor={type.id}
-                          className="flex flex-col items-start p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-blue-500 peer-data-[state=checked]:border-blue-500 peer-data-[state=checked]:bg-blue-50 transition-all"
+                          className={`flex flex-col h-full border-2 rounded-xl cursor-pointer hover:border-slate-300 transition-all ${type.borderColor} ${type.activeBg}`}
                         >
-                          <div className="flex items-center gap-4 w-full">
-                            <div className={`p-2 rounded-full bg-opacity-10 ${type.color} bg-current`}>
-                              {type.icon}
+                          <div className="p-6 space-y-4">
+                            <div className="flex items-center justify-between">
+                               <div className={`p-3 rounded-full ${type.bgColor} ${type.color}`}>
+                                  {type.icon}
+                               </div>
+                               <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${accountType === type.id ? `border-current ${type.color}` : "border-slate-300"}`}>
+                                  {accountType === type.id && <div className={`w-3 h-3 rounded-full bg-current ${type.color}`} />}
+                               </div>
                             </div>
-                            <div className="flex-1">
-                              <div className="flex items-center justify-between">
-                                <span className="font-medium text-gray-900">{type.name}</span>
-                                <Badge variant="outline" className={type.color}>
-                                  {type.features[0]}
-                                </Badge>
-                              </div>
-                              <p className="text-sm text-gray-600 mt-1">{type.description}</p>
+                            
+                            <div>
+                               <h4 className="font-bold text-lg text-slate-800 mb-1">{type.name}</h4>
+                               <p className="text-sm text-slate-600">{type.description}</p>
                             </div>
+
+                            <ul className="space-y-2 pt-2 border-t border-slate-100/50">
+                              {type.features.map((feature, i) => (
+                                <li key={i} className="flex items-center text-sm text-slate-600">
+                                  <CheckCircle2 className={`w-4 h-4 mr-2 ${type.color}`} />
+                                  {feature}
+                                </li>
+                              ))}
+                            </ul>
                           </div>
-                          <ul className="mt-3 pl-2 text-sm text-gray-600 space-y-1">
-                            {type.features.map((feature, i) => (
-                              <li key={i} className="flex items-center">
-                                <svg className="w-4 h-4 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
-                                </svg>
-                                {feature}
-                              </li>
-                            ))}
-                          </ul>
                         </Label>
                       </div>
                     ))}
@@ -207,48 +232,68 @@ export default function NewAccountPage() {
 
               {/* Step 2: Personal Info */}
               {currentStep === 2 && (
-                <div className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <Label htmlFor="prefixName">คำนำหน้า</Label>
-                      <Input
-                        id="prefixName"
-                        placeholder="เช่น นาย, นาง, นางสาว"
-                        value={formData.prefixName}
-                        onChange={handleChange}
-                        required
-                      />
+                <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-300 max-w-2xl mx-auto">
+                   <div className="text-center mb-6">
+                     <h3 className="text-lg font-semibold text-slate-800">ข้อมูลส่วนตัว</h3>
+                     <p className="text-sm text-slate-500">กรอกข้อมูลยืนยันตัวตนเจ้าของบัญชี</p>
+                  </div>
+
+                  <div className="space-y-6">
+                    {/* Identity Section */}
+                    <div className="space-y-4 p-4 bg-slate-50 rounded-xl border border-slate-100">
+                        <div className="space-y-2">
+                          <Label htmlFor="cid" className="text-slate-700 font-medium">เลขบัตรประชาชน <span className="text-red-500">*</span></Label>
+                          <Input
+                            id="cid"
+                            placeholder="เลขประจำตัวประชาชน 13 หลัก"
+                            value={formData.cid}
+                            onChange={handleChange}
+                            maxLength={13}
+                            required
+                            className="h-11 font-mono tracking-wide text-lg bg-white"
+                          />
+                           <p className="text-xs text-slate-400">กรอกเฉพาะตัวเลข 13 หลัก ไม่ต้องใส่เครื่องหมายขีด (-)</p>
+                        </div>
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="firstName">ชื่อจริง</Label>
-                      <Input
-                        id="firstName"
-                        placeholder="กรอกชื่อจริง"
-                        value={formData.firstName}
-                        onChange={handleChange}
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="lastName">นามสกุล</Label>
-                      <Input
-                        id="lastName"
-                        placeholder="กรอกนามสกุล"
-                        value={formData.lastName}
-                        onChange={handleChange}
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="cid">เลขบัตรประชาชน</Label>
-                      <Input
-                        id="cid"
-                        placeholder="กรอกเลข 13 หลัก"
-                        value={formData.cid}
-                        onChange={handleChange}
-                        pattern="[0-9]{13}"
-                        required
-                      />
+
+                    {/* Name Section */}
+                    <div className="space-y-4">
+                       <Label className="text-slate-700 font-medium">ข้อมูลชื่อ - นามสกุล</Label>
+                       <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+                          <div className="md:col-span-2 space-y-2">
+                            <Label htmlFor="prefixName" className="text-xs text-slate-500">คำนำหน้า <span className="text-red-500">*</span></Label>
+                            <Input
+                              id="prefixName"
+                              placeholder="เช่น นาย"
+                              value={formData.prefixName}
+                              onChange={handleChange}
+                              required
+                              className="h-11"
+                            />
+                          </div>
+                          <div className="md:col-span-5 space-y-2">
+                            <Label htmlFor="firstName" className="text-xs text-slate-500">ชื่อจริง <span className="text-red-500">*</span></Label>
+                            <Input
+                              id="firstName"
+                              placeholder="กรอกชื่อจริงภาษาไทย"
+                              value={formData.firstName}
+                              onChange={handleChange}
+                              required
+                              className="h-11"
+                            />
+                          </div>
+                          <div className="md:col-span-5 space-y-2">
+                            <Label htmlFor="lastName" className="text-xs text-slate-500">นามสกุล <span className="text-red-500">*</span></Label>
+                            <Input
+                              id="lastName"
+                              placeholder="กรอกนามสกุลภาษาไทย"
+                              value={formData.lastName}
+                              onChange={handleChange}
+                              required
+                              className="h-11"
+                            />
+                          </div>
+                       </div>
                     </div>
                   </div>
                 </div>
@@ -256,104 +301,101 @@ export default function NewAccountPage() {
 
               {/* Step 3: Account Info */}
               {currentStep === 3 && (
-                <div className="space-y-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="accountName">ชื่อบัญชี</Label>
-                    <Input
-                      id="accountName"
-                      placeholder={`เช่น ${formData.prefixName || 'นาย'}${formData.firstName || 'สมชาย'} ${formData.lastName || 'ดีมาก'}`}
-                      value={formData.accountName}
-                      onChange={handleChange}
-                    />
-                    {!formData.accountName && (
-                      <p className="text-sm text-gray-500 mt-1">
-                        หากไม่กรอก จะใช้ชื่อ &ldquo;<span className="font-medium">{`${formData.prefixName}${formData.firstName} ${formData.lastName}`}</span>&rdquo; โดยอัตโนมัติ
-                      </p>
-                    )}
+                <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-300 max-w-lg mx-auto">
+                   <div className="text-center mb-6">
+                     <h3 className="text-lg font-semibold text-slate-800">รายละเอียดบัญชี</h3>
+                     <p className="text-sm text-slate-500">กำหนดเงินฝากเริ่มต้นและชื่อบัญชี</p>
+                  </div>
+                  
+                  <div className="space-y-4 bg-slate-50 p-6 rounded-xl border border-slate-100">
+                    <div className="space-y-2">
+                      <Label htmlFor="initialDeposit" className="text-base">จำนวนเงินฝากเริ่มต้น</Label>
+                      <div className="relative">
+                        <Input
+                          id="initialDeposit"
+                          type="text"
+                          inputMode="decimal"
+                          value={formData.initialDeposit}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            if (/^\d*\.?\d*$/.test(value)) {
+                              const parts = value.split('.');
+                              if (parts[1] === undefined || parts[1].length <= 2) {
+                                handleChange(e);
+                              }
+                            }
+                          }}
+                          className="pl-10 h-14 text-2xl font-bold text-slate-700"
+                          placeholder="0.00"
+                          required
+                        />
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-lg">฿</span>
+                      </div>
+                    </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="initialDeposit">จำนวนเงินฝากเริ่มต้น (บาท)</Label>
+                  <div className="space-y-3">
+                    <Label htmlFor="accountName">ชื่อบัญชี (Optional)</Label>
                     <div className="relative">
                       <Input
-                        id="initialDeposit"
-                        type="text"  // ใช้ type="text" เพื่อให้ควบคุมการแสดงผลได้ง่ายกว่า
-                        inputMode="decimal"  // ทำให้มือถือแสดงคีย์บอร์ดแบบตัวเลขพร้อมจุดทศนิยม
-                        value={formData.initialDeposit}
-                        onChange={(e) => {
-                          const value = e.target.value;
-                          // อนุญาตเฉพาะ: ตัวเลข 0-9 และจุดทศนิยม (ไม่เกิน 1 จุด)
-                          if (/^\d*\.?\d*$/.test(value)) {
-                            // Optional: จำกัดทศนิยมไม่เกิน 2 ตำแหน่ง
-                            const parts = value.split('.');
-                            if (parts[1] === undefined || parts[1].length <= 2) {
-                              handleChange(e); // หรือ setFormData(...)
-                            }
-                          }
-                        }}
-                        className="pl-8 text-lg"
-                        required
+                        id="accountName"
+                        placeholder="ระบุชื่อบัญชี (ถ้ามี)"
+                        value={formData.accountName}
+                        onChange={handleChange}
+                        className="pl-10 h-11"
                       />
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">฿</span>
+                       <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                     </div>
-                    {/* {accountType === "FIXED" && (
-                      <p className="text-sm text-gray-500 mt-1">
-                        เงินฝากขั้นต่ำ: 5,000 บาท
-                      </p>
-                    )} */}
+                    {!formData.accountName && (
+                      <div className="flex items-center gap-2 text-sm text-blue-600 bg-blue-50 p-3 rounded-lg">
+                        <UserPlus className="w-4 h-4" />
+                         <span>
+                            ระบบจะใช้ชื่อ &ldquo;<span className="font-semibold">{`${formData.prefixName}${formData.firstName} ${formData.lastName}`}</span>&rdquo; โดยอัตโนมัติ
+                         </span>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
+            </div>
 
-              {/* Navigation Buttons */}
-              <div className={`mt-8 flex ${currentStep === 1 ? "justify-end" : "justify-between"}`}>
-                {currentStep > 1 && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={prevStep}
-                    className="px-6 py-3"
-                  >
-                    ย้อนกลับ
-                  </Button>
-                )}
+            {/* Navigation Buttons */}
+            <div className="pt-8 mt-8 border-t flex justify-between items-center">
+               <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={prevStep}
+                  disabled={currentStep === 1}
+                  className={`px-6 h-11 text-slate-500 hover:text-slate-800 ${currentStep === 1 ? "invisible" : ""}`}
+                >
+                  <ArrowLeft className="w-4 h-4 mr-2" /> ย้อนกลับ
+                </Button>
 
-                {currentStep < 3 ? (
-                  <Button
-                    type="button"
-                    onClick={nextStep}
-                    className="px-6 py-3 bg-blue-600 hover:bg-blue-700"
-                  >
-                    ดำเนินการต่อ
-                  </Button>
-                ) : (
-                  <Button
-                    type="submit"
-                    disabled={isLoading}
-                    className="px-6 py-3 bg-blue-600 hover:bg-blue-700"
-                  >
-                    {isLoading ? (
-                      <span className="flex items-center gap-2">
-                        <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        กำลังดำเนินการ...
-                      </span>
-                    ) : (
-                      "เปิดบัญชีใหม่"
-                    )}
-                  </Button>
-                )}
-              </div>
-            </form>
-          </CardContent>
-        </Card>
-
-        {/* <div className="mt-6 text-center text-sm text-gray-500">
-          มีคำถาม? ติดต่อเราได้ที่ 02-123-4567 หรือ support@bank.com
-        </div> */}
-      </div>
+              {currentStep < 3 ? (
+                <Button
+                  type="button"
+                  onClick={nextStep}
+                  className="px-8 h-12 bg-blue-600 hover:bg-blue-700 text-lg shadow-lg hover:shadow-xl transition-all rounded-full"
+                >
+                  ถัดไป <ArrowRight className="w-5 h-5 ml-2" />
+                </Button>
+              ) : (
+                <Button
+                  type="submit"
+                  disabled={isLoading}
+                   className="px-8 h-12 bg-emerald-600 hover:bg-emerald-700 text-lg shadow-lg hover:shadow-xl transition-all rounded-full"
+                >
+                  {isLoading ? (
+                    <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> กำลังสร้างบัญชี...</>
+                  ) : (
+                    <>ยืนยันการเปิดบัญชี <CheckCircle2 className="w-5 h-5 ml-2" /></>
+                  )}
+                </Button>
+              )}
+            </div>
+          </form>
+        </CardContent>
+      </Card>
 
       <Toaster position="top-center" richColors />
     </div>

@@ -12,7 +12,7 @@ import { toast } from "sonner"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Search, Clock, Wallet, ArrowDownCircle, ArrowUpCircle, Loader2, AlertCircle } from "lucide-react"
+import { Search, Clock, Wallet, ArrowDownCircle, ArrowUpCircle, Loader2, AlertCircle, Banknote, CreditCard, History } from "lucide-react"
 import { useDebounce } from "use-debounce"
 
 type Account = {
@@ -25,13 +25,13 @@ type Account = {
 type Tx = {
   id: string
   amount: number
-  type: "DEPOSIT" | "WITHDRAW"
+  type: "DEPOSIT" | "WITHDRAW" | "INTEREST"
   createdAt: string
 }
 
 export default function TransactionPage() {
   const [acctNo, setAcctNo] = useState("")
-  const [debouncedAcctNo] = useDebounce(acctNo, 5000) // Debounce input by 500ms
+  const [debouncedAcctNo] = useDebounce(acctNo, 500) // Debounce input by 500ms
   const [account, setAccount] = useState<Account | null>(null)
   const [amount, setAmount] = useState("")
   const [isLoading, setIsLoading] = useState(false)
@@ -73,7 +73,11 @@ export default function TransactionPage() {
       .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
       .map(tx => {
         const amt = Number(tx.amount)
-        running = tx.type === "DEPOSIT" ? running + amt : running - amt
+         if (tx.type === "DEPOSIT" || tx.type === "INTEREST") {
+            running += amt
+        } else {
+            running -= amt
+        }
         return {
           ...tx,
           balance: running,
@@ -134,299 +138,299 @@ export default function TransactionPage() {
   }
 
   const accountTypeMap = {
-    SAVINGS: { label: "ออมทรัพย์", color: "text-blue-600" },
-    FIXED: { label: "เงินฝากประจำ", color: "text-emerald-600" },
-    CURRENT: { label: "กระแสรายวัน", color: "text-purple-600" }
+    SAVINGS: { label: "ออมทรัพย์", color: "text-blue-600", bg: "bg-blue-50" },
+    FIXED: { label: "เงินฝากประจำ", color: "text-emerald-600", bg: "bg-emerald-50" },
+    CURRENT: { label: "กระแสรายวัน", color: "text-purple-600", bg: "bg-purple-50" }
   }
 
   return (
-    <div className="max-w-7xl mx-auto p-6 space-y-8">
-      <div className="text-center">
-        <h1 className="text-3xl font-bold tracking-tight flex items-center justify-center gap-3">
-          <Wallet className="w-8 h-8" />
-          <span>ทำรายการทางการเงิน</span>
-        </h1>
-        <p className="text-muted-foreground mt-2">
-          บริการฝาก-ถอนเงินและตรวจสอบยอดคงเหลือ
-        </p>
+    <div className="min-h-screen bg-slate-50/50 pb-12">
+      {/* Header Banner */}
+      <div className="bg-gradient-to-r from-blue-900 to-blue-700 text-white py-12 px-4 shadow-lg mb-8">
+         <div className="max-w-7xl mx-auto flex items-center gap-6">
+            <div className="p-4 bg-white/10 backdrop-blur-md rounded-2xl shadow-inner border border-white/20">
+               <Wallet className="w-10 h-10 text-blue-100" />
+            </div>
+            <div>
+               <h1 className="text-3xl font-bold tracking-tight">ทำรายการทางการเงิน</h1>
+               <p className="text-blue-100 mt-2 text-lg opacity-90">
+                 ระบบฝาก-ถอนเงินสด และตรวจสอบยอดเงินในบัญชี
+               </p>
+            </div>
+         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Left Column: Transaction Form */}
-        <div className="space-y-6">
-          <Card className="border-0 shadow-sm">
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Search className="w-5 h-5" />
-                <span>ค้นหาบัญชี</span>
+      <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 lg:grid-cols-12 gap-8">
+        {/* Left Column: Transaction Interface (7 cols) */}
+        <div className="lg:col-span-7 space-y-6">
+          {/* Account Search Card */}
+          <Card className="border-0 shadow-md overflow-hidden bg-white">
+            <CardHeader className="bg-slate-50 border-b pb-4">
+              <CardTitle className="text-lg flex items-center gap-2 text-slate-800">
+                <Search className="w-5 h-5 text-blue-600" />
+                <span>ค้นหาบัญชีสมาชิก</span>
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="accountNumber">เลขที่บัญชี</Label>
+            <CardContent className="pt-6">
+              <div className="relative">
+                <Label htmlFor="accountNumber" className="sr-only">เลขที่บัญชี</Label>
+                <div className="relative">
+                  <CreditCard className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
                   <Input
                     id="accountNumber"
-                    placeholder="เช่น 123-4-56789-0"
+                    placeholder="ระบุเลขที่บัญชี (เช่น 001-0-00001-1)"
                     value={acctNo}
                     onChange={(e) => {
                       const value = e.target.value
-                      // Allow only numbers and dashes
                       if (/^[0-9-]*$/.test(value)) {
                         setAcctNo(value)
                       }
                     }}
-                    className="mt-1 text-base h-12"
+                    className="pl-12 text-lg h-14 border-slate-200 focus:border-blue-500 focus:ring-blue-500 shadow-sm transition-all"
+                    autoComplete="off"
                   />
                 </div>
+                {!account && !isFetchingAccount && acctNo.length > 0 && (
+                   <p className="text-sm text-slate-400 mt-2 pl-2">กำลังค้นหา...</p>
+                )}
               </div>
             </CardContent>
           </Card>
 
-          <Tabs defaultValue="deposit" className="w-full">
-            <TabsList className="grid grid-cols-2 w-full h-12">
-              <TabsTrigger value="deposit" className="h-full">
-                <ArrowDownCircle className="w-4 h-4 mr-2" />
-                ฝากเงิน
-              </TabsTrigger>
-              <TabsTrigger value="withdraw" className="h-full">
-                <ArrowUpCircle className="w-4 h-4 mr-2" />
-                ถอนเงิน
-              </TabsTrigger>
-            </TabsList>
-
-            {["deposit", "withdraw"].map((tab) => (
-              <TabsContent key={tab} value={tab} className="mt-4">
-                <Card className="border-0 shadow-sm">
-                  <CardHeader>
-                    <CardTitle className="text-lg">
-                      {tab === "deposit" ? "ฝากเงินเข้าบัญชี" : "ถอนเงินจากบัญชี"}
-                    </CardTitle>
-                    <CardDescription>
-                      {tab === "deposit"
-                        ? "กรอกจำนวนเงินที่ต้องการฝาก"
-                        : "กรอกจำนวนเงินที่ต้องการถอน"}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <form
-                      onSubmit={(e) => {
-                        e.preventDefault()
-                        doTx(tab === "deposit" ? "DEPOSIT" : "WITHDRAW")
-                      }}
-                      className="space-y-4"
+          {/* Transaction Tabs */}
+          <Card className="border-0 shadow-md bg-white overflow-hidden min-h-[400px]">
+             <Tabs defaultValue="deposit" className="w-full">
+               <div className="bg-slate-50 border-b p-1">
+                  <TabsList className="grid grid-cols-2 w-full h-14 p-1 bg-slate-200/50 rounded-lg gap-2">
+                    <TabsTrigger 
+                      value="deposit" 
+                      className="h-full data-[state=active]:bg-emerald-500 data-[state=active]:text-white data-[state=active]:shadow-md transition-all rounded-md text-slate-600"
                     >
-                      <div>
-                        <Label htmlFor={`amount-${tab}`}>จำนวนเงิน (บาท)</Label>
-                        <div className="relative">
-                          <Input
-                            id={`amount-${tab}`}
-                            type="text"
-                            inputMode="decimal"
-                            value={amount}
-                            onChange={(e) => {
-                              const value = e.target.value
-                              // Allow only numbers and decimal point
-                              if (/^[0-9]*\.?[0-9]*$/.test(value)) {
-                                setAmount(value)
-                              }
-                            }}
-                            placeholder="0.00"
-                            className="mt-1 text-right text-lg h-12 pl-8"
-                            required
-                            disabled={!account}
-                          />
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                            ฿
-                          </span>
-                        </div>
+                      <div className="flex items-center gap-2">
+                         <div className="p-1 rounded-full bg-white/20">
+                           <ArrowDownCircle className="w-5 h-5" />
+                         </div>
+                         <span className="text-base font-semibold">ฝากเงิน</span>
                       </div>
-                      <Button
-                        type="submit"
-                        className="w-full h-12 text-lg"
-                        disabled={isLoading || !account || !amount || parseFloat(amount) <= 0}
-                      >
-                        {isLoading ? (
-                          <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                        ) : null}
-                        {isLoading
-                          ? "กำลังดำเนินการ..."
-                          : tab === "deposit"
-                            ? "ยืนยันการฝากเงิน"
-                            : "ยืนยันการถอนเงิน"}
-                      </Button>
-                    </form>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-            ))}
-          </Tabs>
+                    </TabsTrigger>
+                    <TabsTrigger 
+                      value="withdraw" 
+                      className="h-full data-[state=active]:bg-rose-500 data-[state=active]:text-white data-[state=active]:shadow-md transition-all rounded-md text-slate-600"
+                    >
+                       <div className="flex items-center gap-2">
+                         <div className="p-1 rounded-full bg-white/20">
+                           <ArrowUpCircle className="w-5 h-5" />
+                         </div>
+                         <span className="text-base font-semibold">ถอนเงิน</span>
+                      </div>
+                    </TabsTrigger>
+                  </TabsList>
+               </div>
+
+                {["deposit", "withdraw"].map((tab) => (
+                  <TabsContent key={tab} value={tab} className="mt-0 p-8 outline-none">
+                     <div className="flex flex-col items-center justify-center space-y-8 max-w-md mx-auto py-4">
+                        <div className={`p-4 rounded-full bg-slate-50 border-4 border-white shadow-lg ${
+                            tab === "deposit" ? "text-emerald-500" : "text-rose-500"
+                        }`}>
+                           <Banknote className="w-12 h-12" />
+                        </div>
+                        
+                        <div className="text-center space-y-1">
+                           <h2 className="text-2xl font-bold text-slate-800">
+                              {tab === "deposit" ? "ฝากเงินเข้าบัญชี" : "ถอนเงินจากบัญชี"}
+                           </h2>
+                           <p className="text-slate-500">
+                             {tab === "deposit" 
+                              ? "ระบุจำนวนเงินที่ต้องการฝากเข้า" 
+                              : "ระบุจำนวนเงินที่ต้องการถอนออก"}
+                           </p>
+                        </div>
+
+                        <form
+                          onSubmit={(e) => {
+                            e.preventDefault()
+                            doTx(tab === "deposit" ? "DEPOSIT" : "WITHDRAW")
+                          }}
+                          className="w-full space-y-6"
+                        >
+                          <div className="space-y-3">
+                            <Label htmlFor={`amount-${tab}`} className="text-base font-medium text-slate-700">จำนวนเงิน (บาท)</Label>
+                            <div className="relative group">
+                              <Input
+                                id={`amount-${tab}`}
+                                type="text"
+                                inputMode="decimal"
+                                value={amount}
+                                onChange={(e) => {
+                                  const value = e.target.value
+                                  if (/^[0-9]*\.?[0-9]*$/.test(value)) {
+                                    setAmount(value)
+                                  }
+                                }}
+                                placeholder="0.00"
+                                className="text-right text-3xl font-bold h-20 pl-12 pr-6 shadow-sm border-slate-200 focus:border-blue-500 focus:ring-blue-500 transition-all rounded-xl"
+                                required
+                                disabled={!account}
+                                autoComplete="off"
+                              />
+                              <span className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-2xl group-focus-within:text-blue-500 transition-colors">
+                                ฿
+                              </span>
+                            </div>
+                          </div>
+
+                          <Button
+                            type="submit"
+                            className={`w-full h-14 text-lg font-semibold shadow-lg hover:shadow-xl transition-all rounded-xl ${
+                                tab === "deposit" 
+                                ? "bg-emerald-600 hover:bg-emerald-700" 
+                                : "bg-rose-600 hover:bg-rose-700"
+                            }`}
+                            disabled={isLoading || !account || !amount || parseFloat(amount) <= 0}
+                          >
+                            {isLoading ? (
+                              <Loader2 className="w-6 h-6 mr-2 animate-spin" />
+                            ) : (
+                               tab === "deposit" ? <ArrowDownCircle className="w-6 h-6 mr-2" /> : <ArrowUpCircle className="w-6 h-6 mr-2" />
+                            )}
+                            {isLoading
+                              ? "กำลังดำเนินการ..."
+                              : tab === "deposit"
+                                ? "ยืนยันการฝากเงิน"
+                                : "ยืนยันการถอนเงิน"}
+                          </Button>
+                        </form>
+                     </div>
+                  </TabsContent>
+                ))}
+             </Tabs>
+          </Card>
         </div>
 
-        {/* Right Column: Account Statement */}
-        <div className="space-y-6">
+        {/* Right Column: Account Info & History (5 cols) */}
+        <div className="lg:col-span-5 space-y-6">
           {isFetchingAccount ? (
-            <Card className="border-0 shadow-sm">
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  <span>กำลังโหลดข้อมูลบัญชี</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <Skeleton className="h-6 w-3/4 rounded-full" />
-                <Skeleton className="h-6 w-1/2 rounded-full" />
-                <Skeleton className="h-6 w-2/3 rounded-full" />
+            <Card className="border-0 shadow-md">
+              <CardContent className="p-8 flex flex-col items-center justify-center space-y-4">
+                 <Loader2 className="w-10 h-10 text-blue-600 animate-spin" />
+                 <p className="text-slate-500 font-medium">กำลังโหลดข้อมูลบัญชี...</p>
               </CardContent>
             </Card>
           ) : account ? (
-            <>
-              <Card className="border-0 shadow-sm">
-                <CardHeader>
-                  <CardTitle className="text-lg">รายละเอียดบัญชี</CardTitle>
-                </CardHeader>
-                <CardContent className="grid gap-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">เลขที่บัญชี</span>
-                    <span className="font-mono font-medium">{account.number}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">ชื่อบัญชี</span>
-                    <span className="font-medium">{account.accountName}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">ประเภทบัญชี</span>
-                    <Badge variant="outline" className={accountTypeMap[account.type].color}>
-                      {accountTypeMap[account.type].label}
-                    </Badge>
-                  </div>
-                  <div className="flex items-center justify-between pt-2 border-t">
-                    <span className="text-muted-foreground">ยอดคงเหลือ</span>
-                    <span className="text-2xl font-bold text-primary">
-                      {account.balance.toLocaleString()} บาท
-                    </span>
-                  </div>
-                </CardContent>
+            <div className="space-y-6 animate-in slide-in-from-right-4 duration-500">
+              {/* Account Card */}
+              <Card className="border-0 shadow-lg bg-gradient-to-br from-slate-900 to-slate-800 text-white overflow-hidden relative">
+                 <div className="absolute top-0 right-0 p-32 bg-blue-500/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
+                 <div className="absolute bottom-0 left-0 p-24 bg-emerald-500/10 rounded-full blur-2xl -ml-12 -mb-12 pointer-events-none"></div>
+                 
+                 <CardHeader className="pb-2 border-b border-white/10 relative z-10">
+                    <CardTitle className="text-sm font-medium text-slate-400 uppercase tracking-wider">บัญชีสมาชิก</CardTitle>
+                 </CardHeader>
+                 <CardContent className="pt-6 relative z-10">
+                    <div className="space-y-6">
+                       <div>
+                          <p className="text-3xl font-bold font-mono tracking-widest">{account.number}</p>
+                          <p className="text-slate-300 mt-1 text-lg">{account.accountName}</p>
+                       </div>
+                       
+                       <div className="flex items-end justify-between">
+                          <div>
+                             <p className="text-xs text-slate-400 mb-1">ยอดเงินคงเหลือ</p>
+                             <p className="text-4xl font-bold text-emerald-400">฿{account.balance.toLocaleString()}</p>
+                          </div>
+                          <Badge className={`${accountTypeMap[account.type].bg} ${accountTypeMap[account.type].color} border-0 px-3 py-1 text-xs font-bold`}>
+                             {accountTypeMap[account.type].label}
+                          </Badge>
+                       </div>
+                    </div>
+                 </CardContent>
               </Card>
 
-              <Card className="border-0 shadow-sm">
-                <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <Clock className="w-5 h-5" />
-                    <span>ประวัติรายการ</span>
+              {/* History Card */}
+              <Card className="border-0 shadow-md bg-white overflow-hidden flex flex-col h-[500px]">
+                <CardHeader className="bg-slate-50 border-b py-4">
+                  <CardTitle className="text-base font-semibold flex items-center gap-2 text-slate-800">
+                    <History className="w-5 h-5 text-blue-600" />
+                    <span>ประวัติรายการล่าสุด</span>
                   </CardTitle>
-                  <CardDescription>
-                    รายการล่าสุดจะแสดงด้านบนสุด
-                  </CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-0 flex-1 overflow-auto">
                   {txWithBalance.length > 0 ? (
-                    <div className="rounded-lg border">
-                      <Table>
-                        <TableHeader className="bg-muted/50">
-                          <TableRow>
-                            <TableHead className="w-[160px]">วันที่/เวลา</TableHead>
-                            <TableHead>ประเภท</TableHead>
-                            <TableHead className="text-right">จำนวนเงิน</TableHead>
-                            <TableHead className="text-right">คงเหลือ</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {txWithBalance.map((tx) => (
-                            <TableRow key={tx.id} className="hover:bg-muted/50">
-                              <TableCell className="font-medium">
-                                {new Date(tx.createdAt).toLocaleString("th-TH", {
-                                  day: "numeric",
-                                  month: "short",
-                                  year: "numeric",
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                })}
-                              </TableCell>
-                              <TableCell>
-                                <Badge
-                                  variant={
-                                    tx.type === "DEPOSIT" ? "default" : "destructive"
-                                  }
-                                >
-                                  {tx.type === "DEPOSIT" ? "ฝาก" : "ถอน"}
-                                </Badge>
-                              </TableCell>
-                              <TableCell
-                                className={`text-right font-medium ${tx.type === "DEPOSIT"
-                                  ? "text-green-600"
-                                  : "text-red-600"
-                                  }`}
+                    <Table>
+                      <TableHeader className="bg-slate-50 sticky top-0 z-10">
+                        <TableRow className="border-slate-100">
+                          <TableHead className="w-[140px] text-xs font-semibold text-slate-500">วันที่ / เวลา</TableHead>
+                          <TableHead className="text-xs font-semibold text-slate-500">รายการ</TableHead>
+                          <TableHead className="text-right text-xs font-semibold text-slate-500">จำนวนเงิน</TableHead>
+                          <TableHead className="text-right text-xs font-semibold text-slate-500">คงเหลือ</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {txWithBalance.map((tx) => (
+                          <TableRow key={tx.id} className="border-slate-50 hover:bg-slate-50/50 transition-colors">
+                            <TableCell className="text-xs text-slate-500 font-medium">
+                              <div className="flex flex-col">
+                                <span>{new Date(tx.createdAt).toLocaleDateString("th-TH", { day: '2-digit', month: 'short', year: '2-digit' })}</span>
+                                <span className="text-[10px] text-slate-400">{new Date(tx.createdAt).toLocaleTimeString("th-TH", { hour: '2-digit', minute: '2-digit' })}</span>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Badge
+                                variant="outline"
+                                className={`border-0 font-bold px-2 py-0.5 text-[10px] ${
+                                  tx.type === "DEPOSIT" 
+                                    ? "bg-green-50 text-green-700" 
+                                    : tx.type === "WITHDRAW"
+                                      ? "bg-red-50 text-red-700" 
+                                      : "bg-amber-50 text-amber-700"
+                                }`}
                               >
-                                {tx.type === "DEPOSIT" ? "+" : "-"}
-                                {tx.amount.toLocaleString()}
-                              </TableCell>
-                              <TableCell className="text-right font-medium">
-                                {tx.balance.toLocaleString()}
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
+                                {tx.type === "DEPOSIT" 
+                                  ? "ฝาก" 
+                                  : tx.type === "WITHDRAW"
+                                    ? "ถอน"
+                                    : "ดอกเบี้ย"}
+                              </Badge>
+                            </TableCell>
+                            <TableCell
+                              className={`text-right font-bold tabular-nums ${
+                                tx.type === "DEPOSIT" || tx.type === "INTEREST"
+                                ? "text-green-600"
+                                : "text-red-600"
+                                }`}
+                            >
+                              {tx.type === "DEPOSIT" || tx.type === "INTEREST" ? "+" : "-"}
+                              {tx.amount.toLocaleString()}
+                            </TableCell>
+                            <TableCell className="text-right text-slate-600 font-medium tabular-nums">
+                              {tx.balance.toLocaleString()}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
                   ) : (
-                    <div className="flex flex-col items-center justify-center py-12 text-center">
-                      <div className="text-muted-foreground mb-4">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          width="24"
-                          height="24"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          className="mx-auto h-12 w-12 opacity-50"
-                        >
-                          <line x1="12" x2="12" y1="2" y2="22" />
-                          <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-                        </svg>
-                      </div>
-                      <h3 className="text-lg font-medium">ไม่มีประวัติรายการ</h3>
-                      <p className="text-sm text-muted-foreground">
-                        ยังไม่มีการทำรายการสำหรับบัญชีนี้
-                      </p>
+                    <div className="flex flex-col items-center justify-center h-full text-slate-400 space-y-3 p-6">
+                      <Clock className="w-12 h-12 opacity-20" />
+                      <p className="text-sm">ไม่มีประวัติรายการ</p>
                     </div>
                   )}
                 </CardContent>
               </Card>
-            </>
+            </div>
           ) : (
-            <Card className="border-0 shadow-sm">
-              <CardHeader>
-                <CardTitle className="text-lg">ข้อมูลบัญชี</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <div className="text-muted-foreground mb-4">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="24"
-                      height="24"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className="mx-auto h-12 w-12 opacity-50"
-                    >
-                      <rect width="20" height="14" x="2" y="5" rx="2" />
-                      <line x1="2" x2="22" y1="10" y2="10" />
-                    </svg>
+            // Empty State
+            <Card className="border-2 border-dashed border-slate-200 shadow-none bg-slate-50/50 h-full min-h-[400px] flex items-center justify-center">
+               <div className="text-center space-y-4 max-w-xs mx-auto p-6">
+                  <div className="w-16 h-16 bg-blue-100 text-blue-500 rounded-full flex items-center justify-center mx-auto mb-2">
+                     <Search className="w-8 h-8" />
                   </div>
-                  <h3 className="text-lg font-medium">กรอกเลขที่บัญชี</h3>
-                  <p className="text-sm text-muted-foreground">
-                    กรุณากรอกเลขที่บัญชีเพื่อดูข้อมูลและทำรายการ
+                  <h3 className="text-lg font-semibold text-slate-700">รอการระบุบัญชี</h3>
+                  <p className="text-slate-500 text-sm">
+                    กรุณากรอกเลขที่บัญชีทางด้านซ้ายเพื่อดูรายละเอียดและทำรายการ
                   </p>
-                </div>
-              </CardContent>
+               </div>
             </Card>
           )}
         </div>

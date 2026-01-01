@@ -79,6 +79,13 @@ export async function GET(request: NextRequest) {
         where: { createdAt: { gte: startDate, lte: endDate } },
         select: { createdAt: true },
       }),
+      prisma.transaction.aggregate({
+        _sum: { amount: true },
+        where: {
+          type: "INTEREST",
+          createdAt: { gte: todayStart, lte: todayEnd },
+        },
+      }),
     ]);
 
     // --- START: Data Aggregation for Charts ---
@@ -87,6 +94,7 @@ export async function GET(request: NextRequest) {
       deposits: 0,
       withdrawals: 0,
       newAccounts: 0,
+      interest: 0,
     }));
 
     for (const tx of allTransactionsInRange) {
@@ -95,6 +103,8 @@ export async function GET(request: NextRequest) {
         monthlyData[month].deposits += Number(tx.amount);
       } else if (tx.type === "WITHDRAW") {
         monthlyData[month].withdrawals += Number(tx.amount);
+      } else if (tx.type === "INTEREST") {
+        monthlyData[month].interest += Number(tx.amount);
       }
     }
 
@@ -110,6 +120,10 @@ export async function GET(request: NextRequest) {
     );
     const withdrawalsInRange = monthlyData.reduce(
       (sum, data) => sum + data.withdrawals,
+      0
+    );
+    const interestInRange = monthlyData.reduce(
+      (sum, data) => sum + data.interest,
       0
     );
     const totalNewAccountsInRange = newAccountsInRange.length;
@@ -136,6 +150,7 @@ export async function GET(request: NextRequest) {
         newAccounts: totalNewAccountsInRange,
         depositAmount: depositsInRange,
         withdrawAmount: withdrawalsInRange,
+        interestAmount: interestInRange,
       },
       chartData: monthlyData, // Send aggregated data instead of raw transactions
       recentTransactions: recentTransactionsData,

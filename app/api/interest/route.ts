@@ -1,9 +1,14 @@
 // app/api/interest/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { startOfYear, endOfYear, startOfMonth, endOfMonth } from "date-fns";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+
+// Default rates if not found in database
+const DEFAULT_RATES = {
+  SAVINGS: 0.00001, // 0.001%
+  FIXED: 0.02,      // 2%
+};
 
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
@@ -13,25 +18,40 @@ export async function POST(req: Request) {
   const staffId = session.user.id;
 
   try {
-    const { type } = await req.json();
+    const { type, lateCalculation, targetYear } = await req.json();
     const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
 
-    if (type === "savings") {
-      const currentMonth = now.getMonth();
-      if (currentMonth !== 5 && currentMonth !== 11) {
+    // Determine the calculation year
+    let calculationYear: number;
+    
+    if (currentMonth === 11) {
+      // December - normal calculation for current year
+      calculationYear = currentYear;
+    } else if (lateCalculation && targetYear) {
+      // Late calculation - must be for previous year
+      const previousYear = currentYear - 1;
+      if (targetYear !== previousYear) {
         return NextResponse.json(
-          {
-            error:
-              "สามารถคำนวณดอกเบี้ยออมทรัพย์ได้เฉพาะสิ้นเดือนมิถุนายนและธันวาคมเท่านั้น",
-          },
+          { error: `สามารถคำนวณย้อนหลังได้เฉพาะปี ${previousYear} เท่านั้น` },
           { status: 400 }
         );
       }
+      calculationYear = targetYear;
+    } else {
+      return NextResponse.json(
+        {
+          error: "สามารถคำนวณดอกเบี้ยได้เฉพาะสิ้นปี (เดือนธันวาคม) เท่านั้น",
+          requiresLateCalculation: true,
+          previousYear: currentYear - 1,
+        },
+        { status: 400 }
+      );
+    }
 
-      // --- CHANGE START: Define and Check Period ---
-      const periodIdentifier = `${now.getFullYear()}-H${
-        currentMonth === 5 ? 1 : 2
-      }-SAVINGS`;
+    if (type === "savings") {
+      const periodIdentifier = `${calculationYear}-SAVINGS`;
       const existingLog = await prisma.interestCalculationLog.findUnique({
         where: { periodIdentifier },
       });
@@ -41,10 +61,15 @@ export async function POST(req: Request) {
           {
             error: `ดอกเบี้ยสำหรับรอบนี้ (${periodIdentifier}) ได้ถูกคำนวณไปแล้ว`,
           },
-          { status: 409 } // 409 Conflict: indicates a conflict with the current state of the resource
+          { status: 409 }
         );
       }
-      // --- CHANGE END ---
+
+      // Get interest rate from database or use default
+      const rateRecord = await prisma.interestRate.findUnique({
+        where: { accountType: "SAVINGS" },
+      });
+      const interestRate = rateRecord?.rate ?? DEFAULT_RATES.SAVINGS;
 
       let totalInterestPaid = 0;
       let accountsAffected = 0;
@@ -54,8 +79,7 @@ export async function POST(req: Request) {
 
       await prisma.$transaction(async (tx) => {
         for (const account of accounts) {
-          const interestRate = 0.00001;
-          const interestAmount = Number(account.balance) * interestRate * 0.5;
+          const interestAmount = Number(account.balance) * interestRate;
 
           if (interestAmount > 0) {
             totalInterestPaid += interestAmount;
@@ -79,7 +103,6 @@ export async function POST(req: Request) {
         }
       });
 
-      // --- CHANGE START: Create Log on Success ---
       await prisma.interestCalculationLog.create({
         data: {
           type: "SAVINGS",
@@ -90,7 +113,6 @@ export async function POST(req: Request) {
           totalInterestPaid,
         },
       });
-      // --- CHANGE END ---
 
       return NextResponse.json({
         message: `คำนวณดอกเบี้ยออมทรัพย์สำเร็จ`,
@@ -98,8 +120,7 @@ export async function POST(req: Request) {
         totalInterestPaid,
       });
     } else if (type === "fixed") {
-      // --- CHANGE START: Define and Check Period ---
-      const periodIdentifier = `${now.getFullYear()}-FIXED`;
+      const periodIdentifier = `${calculationYear}-FIXED`;
       const existingLog = await prisma.interestCalculationLog.findUnique({
         where: { periodIdentifier },
       });
@@ -112,8 +133,14 @@ export async function POST(req: Request) {
           { status: 409 }
         );
       }
-      // --- CHANGE END ---
 
+      // Get interest rate from database or use default
+      const rateRecord = await prisma.interestRate.findUnique({
+        where: { accountType: "FIXED" },
+      });
+      const interestRate = rateRecord?.rate ?? DEFAULT_RATES.FIXED;
+
+      // Check for penalty withdrawal after Jan 10
       const penaltyStartDate = new Date(now.getFullYear(), 0, 11);
       let totalInterestPaid = 0;
       let accountsAffected = 0;
@@ -132,7 +159,6 @@ export async function POST(req: Request) {
           });
 
           if (!penaltyWithdrawal) {
-            const interestRate = 0.02;
             const interestAmount = Number(account.balance) * interestRate;
 
             if (interestAmount > 0) {
@@ -158,7 +184,6 @@ export async function POST(req: Request) {
         }
       });
 
-      // --- CHANGE START: Create Log on Success ---
       await prisma.interestCalculationLog.create({
         data: {
           type: "FIXED",
@@ -169,7 +194,6 @@ export async function POST(req: Request) {
           totalInterestPaid,
         },
       });
-      // --- CHANGE END ---
 
       return NextResponse.json({
         message: "ตรวจสอบและจ่ายดอกเบี้ยเงินฝากประจำสำเร็จ",

@@ -2,6 +2,12 @@ import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
+import { Prisma } from "@prisma/client"
+
+// Define the type for transaction with included account
+type TransactionWithAccount = Prisma.TransactionGetPayload<{
+  include: { account: true }
+}>
 
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions)
@@ -61,7 +67,7 @@ export async function POST(req: Request) {
     let netChange = 0
 
     // 4. Simulate
-    const previewItems = transactions.map(tx => {
+    const previewItems = transactions.map((tx: TransactionWithAccount) => {
        const oldAmount = Number(tx.amount)
        const balanceAfter = Number(tx.balanceAfter)
        // Reverse calculate principal: The balance BEFORE adding interest

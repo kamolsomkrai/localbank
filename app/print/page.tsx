@@ -165,7 +165,7 @@ export default function PrintPassbook() {
                    <div className="min-w-5 h-5 bg-blue-100 rounded-full flex items-center justify-center text-blue-700 font-bold text-[10px] mt-0.5">
                     2
                   </div>
-                  <p>ตรวจสอบความถูกต้องก่อนกด <span className="font-semibold text-green-600">"พิมพ์สำเร็จ"</span> ในหน้ายืนยัน</p>
+                  <p>ตรวจสอบความถูกต้องก่อนกด <span className="font-semibold text-green-600">&quot;พิมพ์สำเร็จ&quot;</span> ในหน้ายืนยัน</p>
                 </div>
               </CardContent>
             </Card>

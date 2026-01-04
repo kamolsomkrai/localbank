@@ -32,12 +32,10 @@ export async function POST(req: Request) {
     const currentRate = rateRecord.rate // e.g., 0.02
 
     // 3. Find Transactions in that period
-    // Parse year from identifier (Format: YEAR-TYPE)
-    const [yearStr] = log.periodIdentifier.split("-")
-    const year = parseInt(yearStr)
-    
-    const startDate = new Date(year, 11, 31, 0, 0, 0)
-    const endDate = new Date(year, 11, 31, 23, 59, 59)
+    // Use the executedAt date from the log to find transactions created on that day
+    const executedDate = new Date(log.executedAt)
+    const startDate = new Date(executedDate.getFullYear(), executedDate.getMonth(), executedDate.getDate(), 0, 0, 0)
+    const endDate = new Date(executedDate.getFullYear(), executedDate.getMonth(), executedDate.getDate(), 23, 59, 59)
     
     const transactions = await prisma.transaction.findMany({
        where: {

@@ -21,11 +21,10 @@ export async function POST(req: Request) {
     if (!rateRecord) return NextResponse.json({ error: "Rate not found" }, { status: 400 })
     const currentRate = rateRecord.rate
 
-    // 2. Find Transactions
-    const [yearStr] = log.periodIdentifier.split("-")
-    const year = parseInt(yearStr)
-    const startDate = new Date(year, 11, 31, 0, 0, 0)
-    const endDate = new Date(year, 11, 31, 23, 59, 59)
+    // 2. Find Transactions - Use the executedAt date from log
+    const executedDate = new Date(log.executedAt)
+    const startDate = new Date(executedDate.getFullYear(), executedDate.getMonth(), executedDate.getDate(), 0, 0, 0)
+    const endDate = new Date(executedDate.getFullYear(), executedDate.getMonth(), executedDate.getDate(), 23, 59, 59)
     
     const transactions = await prisma.transaction.findMany({
        where: {
